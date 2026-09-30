@@ -1,0 +1,17 @@
+<div class="alert alert-warning" role="alert">
+    <div class="fw-semibold mb-2">Restore the latest recovery point?</div>
+    <p class="mb-3">
+        This replaces the active clients.conf with recovery point
+        <code>{{ backup.backup_id }}</code>. A safety backup is created first.
+    </p>
+    <form hx-post="/ui/backups/latest/rollback"
+          hx-target="#recovery-table-container"
+          hx-swap="innerHTML">
+        <input type="hidden" name="confirm_backup_id" value="{{ backup.backup_id }}">
+        <button class="btn btn-danger" type="submit">Restore latest</button>
+        <button class="btn btn-outline-secondary" type="button"
+                onclick="document.getElementById('backup-workspace').replaceChildren()">
+            Cancel
+        </button>
+    </form>
+</div>

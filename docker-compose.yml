@@ -1,0 +1,81 @@
+# =============================================================
+#  RadiusDeck + reload sidecar
+#  FreeRADIUS is NOT provided — connected as an external service
+# =============================================================
+
+services:
+  # ── RadiusDeck web UI ─────────────────────────────────────
+  radiusdeck:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: radiusdeck
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - type: bind
+        source: ${HOST_RADIUS_CLIENTS_CONF:?HOST_RADIUS_CLIENTS_CONF is required}
+        target: /data/clients.conf
+        bind:
+          create_host_path: false
+      - radiusdeck-backups:/backups
+      # Optional read-only FreeRADIUS log mount for the log viewer:
+      # - /var/log/freeradius/radius.log:/var/log/freeradius/radius.log:ro
+    environment:
+      APP_RADIUS_CLIENTS_PATH: /data/clients.conf
+      APP_SIDECAR_RELOAD_ENABLED: "true"
+      APP_SIDECAR_RELOAD_URL: http://reload-sidecar:9090/reload
+      APP_SIDECAR_RELOAD_TOKEN: ${RELOAD_TOKEN:-changeme-in-production}
+      APP_AUTH_METHOD: ${APP_AUTH_METHOD:-none}
+      APP_BACKUP_DIR: /backups
+      # Optional FreeRADIUS log viewer:
+      # APP_FREERADIUS_LOG_VIEWER_ENABLED: "true"
+      # APP_FREERADIUS_LOG_PATH: /var/log/freeradius/radius.log
+    networks:
+      - radiusdeck
+    depends_on:
+      reload-sidecar:
+        condition: service_started
+
+  # ── Tiny reload sidecar (~25 MB image) ────────────────────
+  reload-sidecar:
+    image: ghcr.io/radiusdeck/docker-reload-sidecar:1.0.0
+    container_name: reload-sidecar
+    restart: unless-stopped
+    volumes:
+      # Docker socket for managing containers
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      TARGET_CONTAINER: freeradius        # name of the FreeRADIUS container
+      RELOAD_MODE: restart                # restart | signal
+      RELOAD_SIGNAL: HUP                  # used only when mode=signal
+      RELOAD_TOKEN: ${RELOAD_TOKEN:-changeme-in-production}
+      RESTART_TIMEOUT: "10"
+    networks:
+      - radiusdeck
+    # DO NOT expose port outside — available only within the network
+
+  # ── FreeRADIUS (EXAMPLE — substitute your own) ────────────────
+  # Uncomment if you want to run everything together for testing.
+  # In production, FreeRADIUS is an external service.
+  #
+  # freeradius:
+  #   image: freeradius/freeradius-server:3.2.3
+  #   container_name: freeradius
+  #   restart: unless-stopped
+  #   ports:
+  #     - "1812:1812/udp"    # auth
+  #     - "1813:1813/udp"    # accounting
+  #   volumes:
+  #     - ${HOST_RADIUS_CLIENTS_CONF}:/etc/freeradius/3.0/clients.conf
+  #   command: freeradius -f          # foreground
+  #   networks:
+  #     - radiusdeck
+
+volumes:
+  radiusdeck-backups:
+
+networks:
+  radiusdeck:
+    name: radiusdeck

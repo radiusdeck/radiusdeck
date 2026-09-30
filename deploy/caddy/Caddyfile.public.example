@@ -1,0 +1,18 @@
+# Public production HTTPS example.
+#
+# Requirements:
+# - radiusdeck.example.com resolves to this host.
+# - Ports 80 and 443 are reachable.
+# - APP_PUBLIC_URL=https://radiusdeck.example.com
+#
+# Caddy will request and renew certificates automatically.
+
+radiusdeck.example.com {
+    reverse_proxy radiusdeck:8000
+
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer
+        X-Frame-Options DENY
+    }
+}

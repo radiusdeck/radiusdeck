@@ -1,0 +1,16 @@
+{# components/client_form_card.html #}
+{% set mode = mode|default("create") %}
+
+<div class="card shadow-sm" id="form-card">
+  {% if mode == "edit" and client is defined and client %}
+    <div class="card-header bg-primary text-white">
+      Edit Client: <code class="text-white">{{ client.name }}</code>
+    </div>
+  {% else %}
+    <div class="card-header bg-primary text-white">New Client</div>
+  {% endif %}
+
+  <div class="card-body">
+    {% include "components/client_form.html" %}
+  </div>
+</div>

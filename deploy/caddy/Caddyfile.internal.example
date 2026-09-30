@@ -1,0 +1,20 @@
+# Private HTTPS example using Caddy's internal CA.
+#
+# Good for LAN, homelab, private DNS, and air-gapped environments.
+#
+# Important:
+# - Browsers and API clients must trust Caddy's internal root CA.
+# - APP_PUBLIC_URL must match this HTTPS URL.
+# - Do not use this as a public internet certificate profile.
+
+radiusdeck.internal {
+    tls internal
+
+    reverse_proxy radiusdeck:8000
+
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer
+        X-Frame-Options DENY
+    }
+}

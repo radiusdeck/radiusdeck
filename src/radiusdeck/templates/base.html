@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreeRADIUS Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <style>
+        body {
+            padding-top: 20px;
+        }
+
+        .htmx-indicator {
+            display: none;
+        }
+
+        .htmx-request .htmx-indicator {
+            display: inline;
+        }
+
+        .client-block-card {
+            padding-left: 12px;
+        }
+
+        .client-secret-icon-button {
+            align-items: center;
+            display: inline-flex;
+            height: 2rem;
+            justify-content: center;
+            padding: 0;
+            width: 2rem;
+        }
+
+        .client-secret-icon-button svg {
+            height: 1rem;
+            width: 1rem;
+        }
+
+        .log-output {
+            height: 68vh;
+            overflow-y: auto;
+            overflow-x: auto;
+            background: #1f2327;
+            color: #f8f9fa;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+            font-size: 0.875rem;
+            line-height: 1.45;
+            padding: 1rem;
+            white-space: pre;
+            scroll-behavior: auto;
+            overflow-anchor: none;
+        }
+    </style>
+</head>
+
+<body class="bg-light"{% if csrf_hx_headers %} hx-headers='{{ csrf_hx_headers | tojson }}'{% endif %}>
+
+    <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark rounded mb-4">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-semibold" href="/ui/clients">
+                    RadiusDeck
+                </a>
+
+                <div class="navbar-nav me-auto">
+                    <a class="nav-link {% if request.url.path.startswith('/ui/clients') %}active{% endif %}"
+                       href="/ui/clients">
+                        Clients
+                    </a>
+                    {% if log_viewer_nav_visible %}
+                    <a class="nav-link {% if request.url.path.startswith('/ui/logs') %}active{% endif %}"
+                       href="/ui/logs">
+                        Logs
+                    </a>
+                    {% endif %}
+                    {% if status_nav_visible %}
+                    <a class="nav-link {% if request.url.path.startswith('/ui/status') %}active{% endif %}"
+                       href="/ui/status">
+                        Status
+                    </a>
+                    {% endif %}
+                    {% if backups_nav_visible %}
+                    <a class="nav-link {% if request.url.path.startswith('/ui/backups') %}active{% endif %}"
+                       href="/ui/backups">
+                        Backups
+                    </a>
+                    {% endif %}
+                </div>
+
+                {% if request.state.user %}
+                <div class="d-flex align-items-center gap-2">
+                    <span class="navbar-text text-light">
+                        {{ request.state.user.display_name }}
+                    </span>
+                    <button class="btn btn-outline-light btn-sm" type="button" hx-post="/logout" hx-swap="none">
+                        Logout
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </nav>
+        <div id="reload-alerts"></div>
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+    <script src="/static/js/client-secrets.js"></script>
+
+    <script>
+        function serializeAssignmentsCreate(container) {
+            var out = [];
+            if (!container) return out;
+
+            container.querySelectorAll(".assignment-row").forEach(function (row) {
+                var key = (row.querySelector(".assignment-key") || {}).value || "";
+                var value = (row.querySelector(".assignment-value") || {}).value || "";
+                key = key.trim();
+                if (key) out.push({ key: key, value: value });
+            });
+
+            return out;
+        }
+
+        function serializeAssignmentsEdit(container) {
+            var out = [];
+            if (!container) return out;
+
+            container.querySelectorAll(".assignment-row").forEach(function (row) {
+                var key = (row.querySelector(".assignment-key") || {}).value || "";
+                var value = (row.querySelector(".assignment-value") || {}).value || "";
+                key = key.trim();
+
+                // id comes from data-node-id; empty string => null (new node)
+                var nodeId = (row.getAttribute("data-node-id") || "").trim();
+                var idVal = nodeId ? nodeId : null;
+
+                if (key) out.push({ id: idVal, key: key, value: value });
+            });
+
+            return out;
+        }
+
+        function serializeBlockCreate(blockEl) {
+            var kind = ((blockEl.querySelector(".block-kind") || {}).value || "").trim();
+            var name = ((blockEl.querySelector(".block-name") || {}).value || "").trim();
+            var assignments = serializeAssignmentsCreate(blockEl.querySelector(".block-assignments"));
+
+            var blocks = [];
+            var childrenContainer = blockEl.querySelector(".block-children");
+            if (childrenContainer) {
+                childrenContainer.querySelectorAll(":scope > .client-block").forEach(function (child) {
+                    blocks.push(serializeBlockCreate(child));
+                });
+            }
+
+            return { kind: kind, name: name ? name : null, assignments: assignments, blocks: blocks };
+        }
+
+        function serializeBlockEdit(blockEl) {
+            var kind = ((blockEl.querySelector(".block-kind") || {}).value || "").trim();
+            var name = ((blockEl.querySelector(".block-name") || {}).value || "").trim();
+
+            var nodeId = (blockEl.getAttribute("data-node-id") || "").trim();
+            var idVal = nodeId ? nodeId : null;
+
+            var assignments = serializeAssignmentsEdit(blockEl.querySelector(".block-assignments"));
+
+            var blocks = [];
+            var childrenContainer = blockEl.querySelector(".block-children");
+            if (childrenContainer) {
+                childrenContainer.querySelectorAll(":scope > .client-block").forEach(function (child) {
+                    blocks.push(serializeBlockEdit(child));
+                });
+            }
+
+            return { id: idVal, kind: kind, name: name ? name : null, assignments: assignments, blocks: blocks };
+        }
+
+        function serializeBlocksCreate(container) {
+            var out = [];
+            if (!container) return out;
+
+            container.querySelectorAll(":scope > .client-block").forEach(function (b) {
+                out.push(serializeBlockCreate(b));
+            });
+            return out;
+        }
+
+        function serializeBlocksEdit(container) {
+            var out = [];
+            if (!container) return out;
+
+            container.querySelectorAll(":scope > .client-block").forEach(function (b) {
+                out.push(serializeBlockEdit(b));
+            });
+            return out;
+        }
+
+        document.body.addEventListener("htmx:configRequest", function (evt) {
+            var verb = (evt.detail.verb || "").toLowerCase();
+            var path = evt.detail.path || "";
+
+            var form = evt.detail.elt.closest("form") || evt.detail.elt;
+            if (!form) return;
+
+            // ---- CREATE: POST /ui/clients/add-tree ----
+            if (verb === "post" && path === "/ui/clients/add-tree" && form.id === "add-form") {
+                var nameEl = form.querySelector('input[name="name"]');
+                var ipaddrEl = form.querySelector('input[name="ip_addr"]');
+                var secretEl = form.querySelector('input[name="secret"]');
+
+                var payload = {
+                    name: ((nameEl && nameEl.value) || "").trim(),
+                    ipaddr: ((ipaddrEl && ipaddrEl.value) || "").trim(),
+                    secret: ((secretEl && secretEl.value) || "").trim(),
+                    assignments: serializeAssignmentsCreate(form.querySelector("#extra-params")),
+                    blocks: serializeBlocksCreate(form.querySelector("#nested-blocks"))
+                };
+
+                evt.detail.parameters = { payload_json: JSON.stringify(payload) };
+                return;
+            }
+
+            // ---- EDIT: PUT /ui/clients/{name}/tree ----
+            // Example path: /ui/clients/LOCAL/tree
+            if (verb === "put" && path.match(/^\/ui\/clients\/[^\/]+\/tree$/) && form.id === "edit-form") {
+                var nameEl2 = form.querySelector('input[name="name"]');
+                var ipaddrEl2 = form.querySelector('input[name="ip_addr"]');
+                var secretEl2 = form.querySelector('input[name="secret"]');
+
+                var payload2 = {
+                    name: ((nameEl2 && nameEl2.value) || "").trim(),
+                    ipaddr: ((ipaddrEl2 && ipaddrEl2.value) || "").trim(),
+                    assignments: serializeAssignmentsEdit(form.querySelector("#extra-params")),
+                    blocks: serializeBlocksEdit(form.querySelector("#nested-blocks"))
+                };
+
+                var newSecret = ((secretEl2 && secretEl2.value) || "").trim();
+                if (newSecret) payload2.secret = newSecret;
+
+                evt.detail.parameters = { payload_json: JSON.stringify(payload2) };
+                return;
+            }
+        });
+
+        // Ошибка при добавлении
+        document.body.addEventListener("clientAddError", function (evt) {
+            var el = document.getElementById("form-errors");
+            if (el) el.textContent = evt.detail;
+        });
+
+        // После успешного add — очистить форму
+        document.body.addEventListener("clientAdded", function () {
+            var form = document.getElementById("add-form");
+            if (form) form.reset();
+
+            var extraParams = document.getElementById("extra-params");
+            if (extraParams) extraParams.innerHTML = "";
+
+            var nestedBlocks = document.getElementById("nested-blocks");
+            if (nestedBlocks) nestedBlocks.innerHTML = "";
+
+            var errors = document.getElementById("form-errors");
+            if (errors) errors.textContent = "";
+        });
+
+        // Ошибка при добавлении
+        document.body.addEventListener("clientAddError", function (evt) {
+            var el = document.getElementById("form-errors");
+            if (el) el.textContent = evt.detail;
+        });
+
+        document.body.addEventListener("clientUpdated", function (evt) {
+            var name = evt.detail.value || evt.detail;
+
+            var collapse = document.getElementById("collapse-" + name);
+            if (!collapse) return;
+
+            var inst = bootstrap.Collapse.getInstance(collapse);
+            if (!inst) inst = new bootstrap.Collapse(collapse, { toggle: false });
+
+            inst.hide();
+        });
+
+        document.body.addEventListener("htmx:afterSwap", function (evt) {
+            if (evt.detail.target && evt.detail.target.id === "backup-workspace") {
+                evt.detail.target.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,13 @@
+<div id="reload-alerts" hx-swap-oob="innerHTML">
+    {% if backup %}
+    {% include "components/backup_alert.html" %}
+    {% endif %}
+    {% if reload_result.status.value == "failed" %}
+    <div class="alert alert-warning d-flex justify-content-between align-items-center gap-3" role="alert">
+        <span>FreeRADIUS reload failed: {{ reload_result.detail }}</span>
+        {% if show_logs_link %}
+        <a class="btn btn-outline-dark btn-sm" href="/ui/logs">View FreeRADIUS logs</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>

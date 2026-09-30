@@ -1,0 +1,46 @@
+services:
+  radiusdeck:
+    image: ghcr.io/your-org/radiusdeck:latest
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      APP_EDITION: "community"
+      APP_PUBLIC_URL: "https://radiusdeck.example.com"
+      APP_AUTH_METHOD: "local"
+      APP_SESSION_SECRET_KEY: "${APP_SESSION_SECRET_KEY:?APP_SESSION_SECRET_KEY is required}"
+      APP_LOCAL_USERS_PATH: "/data/users.json"
+      APP_RADIUS_CLIENTS_PATH: "/data/clients.conf"
+      APP_BACKUP_DIR: "/backups"
+      APP_FREERADIUS_LOG_VIEWER_ENABLED: "true"
+      APP_FREERADIUS_LOG_PATH: "/logs/radius.log"
+    volumes:
+      - radiusdeck-data:/data
+      - radiusdeck-backups:/backups
+      - ./logs:/logs:ro
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - radiusdeck
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../caddy/Caddyfile.public.example:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - internal
+
+volumes:
+  radiusdeck-data:
+  radiusdeck-backups:
+  caddy-data:
+  caddy-config:
+
+networks:
+  internal:

@@ -1,0 +1,50 @@
+services:
+  radiusdeck:
+    # image: ghcr.io/your-org/radiusdeck:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      APP_EDITION: "community"
+      APP_PUBLIC_URL: "https://radiusdeck.company.lan"
+      APP_AUTH_METHOD: "none"
+      APP_RADIUS_CLIENTS_PATH: "/data/clients.conf"
+      APP_BACKUP_DIR: "/backups"
+      APP_FREERADIUS_LOG_VIEWER_ENABLED: "true"
+      APP_FREERADIUS_LOG_PATH: "/logs/radius.log"
+    volumes:
+      - ${HOST_RADIUS_CLIENTS_CONF:?HOST_RADIUS_CLIENTS_CONF is required}:/data/clients.conf
+      - ${HOST_FREERADIUS_LOG:?HOST_FREERADIUS_LOG is required}:/logs/radius.log:ro
+      - type: bind
+        source: ${HOST_RADIUS_BACKUP_DIR:?HOST_RADIUS_BACKUP_DIR is required}
+        target: /backups
+        bind:
+          create_host_path: false
+    networks:
+      - internal
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - radiusdeck
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../caddy/Caddyfile.mounted-cert.example:/etc/caddy/Caddyfile:ro
+      - /tmp/certs:/certs:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - internal
+
+volumes:
+  caddy-data:
+  caddy-config:
+
+networks:
+  internal:

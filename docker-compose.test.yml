@@ -1,0 +1,61 @@
+# Manual test compose for RadiusDeck with external FreeRADIUS and reload sidecar.
+#
+# Fill these values in your shell or .env before running:
+#
+#   HOST_RADIUS_CLIENTS_CONF=/absolute/path/to/clients.conf
+#   HOST_FREERADIUS_LOG=/absolute/path/to/radius.log
+#   HOST_RADIUS_BACKUP_DIR=/absolute/path/to/writable/backup-directory
+#   APP_SIDECAR_RELOAD_URL=http://host.docker.internal:9090/reload
+#   APP_SIDECAR_HEALTH_URL=http://host.docker.internal:9090/health
+#   APP_SIDECAR_RELOAD_TOKEN=your-reload-token
+#   RADIUSDECK_TEST_USER=1000:1000
+#
+# Example:
+#
+#   HOST_RADIUS_CLIENTS_CONF=/etc/freeradius/3.0/clients.conf \
+#   HOST_FREERADIUS_LOG=/var/log/freeradius/radius.log \
+#   APP_SIDECAR_RELOAD_URL=http://host.docker.internal:9090/reload \
+#   APP_SIDECAR_HEALTH_URL=http://host.docker.internal:9090/health \
+#   APP_SIDECAR_RELOAD_TOKEN=changeme \
+#   RADIUSDECK_TEST_USER="$(id -u):$(id -g)" \
+#   docker compose -f docker-compose.test.yml up --build
+
+services:
+  radiusdeck:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: radiusdeck-test
+    user: "${RADIUSDECK_TEST_USER:-radiusdeck}"
+    restart: unless-stopped
+    ports:
+      - "${RADIUSDECK_TEST_PORT:-8000}:8000"
+    volumes:
+      - "${HOST_RADIUS_CLIENTS_CONF:?set HOST_RADIUS_CLIENTS_CONF}:/data/clients.conf:rw"
+      - "${HOST_FREERADIUS_LOG:?set HOST_FREERADIUS_LOG}:/var/log/freeradius/radius.log:ro"
+      - type: bind
+        source: "${HOST_RADIUS_BACKUP_DIR:?set HOST_RADIUS_BACKUP_DIR}"
+        target: /backups
+        bind:
+          create_host_path: false
+    environment:
+      APP_ENV: "${APP_ENV:-test}"
+      APP_AUTH_METHOD: "${APP_AUTH_METHOD:-none}"
+      APP_RADIUS_CLIENTS_PATH: /data/clients.conf
+      APP_BACKUP_ENABLED: "${APP_BACKUP_ENABLED:-true}"
+      APP_BACKUP_DIR: /backups
+
+      APP_FREERADIUS_LOG_VIEWER_ENABLED: "${APP_FREERADIUS_LOG_VIEWER_ENABLED:-true}"
+      APP_FREERADIUS_LOG_PATH: /var/log/freeradius/radius.log
+      APP_FREERADIUS_LOG_DEFAULT_LINES: "${APP_FREERADIUS_LOG_DEFAULT_LINES:-200}"
+      APP_FREERADIUS_LOG_MAX_BYTES: "${APP_FREERADIUS_LOG_MAX_BYTES:-512000}"
+
+      APP_SIDECAR_RELOAD_ENABLED: "${APP_SIDECAR_RELOAD_ENABLED:-true}"
+      APP_SIDECAR_RELOAD_URL: "${APP_SIDECAR_RELOAD_URL:?set APP_SIDECAR_RELOAD_URL}"
+      APP_SIDECAR_HEALTH_URL: "${APP_SIDECAR_HEALTH_URL:-http://host.docker.internal:9090/health}"
+      APP_SIDECAR_RELOAD_TOKEN: "${APP_SIDECAR_RELOAD_TOKEN:?set APP_SIDECAR_RELOAD_TOKEN}"
+      APP_SIDECAR_RELOAD_TIMEOUT_SECONDS: "${APP_SIDECAR_RELOAD_TIMEOUT_SECONDS:-10}"
+
+      APP_LOG_LEVEL: "${APP_LOG_LEVEL:-INFO}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

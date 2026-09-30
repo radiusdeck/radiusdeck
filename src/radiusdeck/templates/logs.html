@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+    <div>
+        <h1 class="h3 mb-1">Logs</h1>
+    </div>
+    {% for contribution in ui_slots['logs.toolbar'] %}
+        {% include contribution.template %}
+    {% endfor %}
+</div>
+
+<details {% if not ui_slots['logs.sections'] %}open{% endif %}>
+<summary class="mb-3">Recent log lines</summary>
+<div class="card shadow-sm">
+    <div class="card-header bg-white">
+        <div class="d-flex justify-content-between align-items-start gap-3">
+            <div>
+                <div class="fw-semibold">FreeRADIUS log</div>
+            </div>
+            <div class="small text-muted text-nowrap">
+                Last updated: {{ last_updated_display }}
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <form id="basic-log-controls"
+              class="row g-2 align-items-end mb-3"
+              hx-get="/ui/logs/tail"
+              hx-target="#basic-log-lines"
+              hx-swap="innerHTML">
+            <div class="col-12 col-md-2">
+                <label for="basic-log-line-count" class="form-label small text-muted">Lines</label>
+                <select id="basic-log-line-count" name="lines" class="form-select">
+                    {% for option in line_options %}
+                    <option value="{{ option }}" {% if selected_lines == option %}selected{% endif %}>
+                        {{ option }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+
+            <div class="col-auto">
+                <button class="btn btn-primary" type="submit">Refresh</button>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-secondary" type="button" data-log-jump-bottom>
+                    Jump to latest
+                </button>
+            </div>
+        </form>
+
+        <div id="basic-log-output" class="log-output rounded">
+            <div id="basic-log-lines"
+                 hx-get="/ui/logs/tail"
+
+                 hx-include="#basic-log-controls"
+                 hx-target="#basic-log-lines"
+                 hx-swap="innerHTML">
+                {% include "components/log_output.html" %}
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between gap-3 mt-2 small text-muted">
+            <span>
+                {% if result %}
+                Showing {{ result.returned_lines }}{% if query %} matching{% endif %} lines
+                from last {{ result.requested_lines }}
+                {% if result.truncated %} · truncated{% endif %}
+                {% else %}
+                No log lines available
+                {% endif %}
+            </span>
+
+        </div>
+    </div>
+</div>
+
+</details>
+<script>
+    (function () {
+        var BOTTOM_THRESHOLD_PX = 48;
+
+        function getLogOutput() {
+            return document.getElementById("basic-log-output");
+        }
+
+        function isNearBottom(element) {
+            return (
+                element.scrollHeight - element.scrollTop - element.clientHeight
+                <= BOTTOM_THRESHOLD_PX
+            );
+        }
+
+        function scrollToBottom(element) {
+            element.scrollTop = element.scrollHeight;
+        }
+
+        document.body.addEventListener("htmx:beforeSwap", function (evt) {
+            if (!evt.detail.target || evt.detail.target.id !== "basic-log-lines") {
+                return;
+            }
+
+            var output = getLogOutput();
+
+            if (!output) {
+                return;
+            }
+
+            output.dataset.wasNearBottom = isNearBottom(output) ? "true" : "false";
+            output.dataset.previousScrollTop = String(output.scrollTop);
+        });
+
+        document.body.addEventListener("htmx:afterSwap", function (evt) {
+            if (!evt.detail.target || evt.detail.target.id !== "basic-log-lines") {
+                return;
+            }
+
+            var output = getLogOutput();
+
+            if (!output) {
+                return;
+            }
+
+            if (output.dataset.wasNearBottom === "true") {
+                scrollToBottom(output);
+                return;
+            }
+
+            var previousScrollTop = Number(output.dataset.previousScrollTop || "0");
+
+            if (Number.isFinite(previousScrollTop)) {
+                output.scrollTop = previousScrollTop;
+            }
+        });
+
+        document.body.addEventListener("click", function (evt) {
+            var button = evt.target.closest("[data-log-jump-bottom]");
+
+            if (!button) {
+                return;
+            }
+
+            var output = getLogOutput();
+
+            if (output) {
+                scrollToBottom(output);
+            }
+        });
+
+        window.addEventListener("load", function () {
+            var output = getLogOutput();
+
+            if (output) {
+                scrollToBottom(output);
+            }
+        });
+    })();
+</script>
+{% for contribution in ui_slots['logs.sections'] %}
+    {% include contribution.template %}
+{% endfor %}
+{% endblock %}

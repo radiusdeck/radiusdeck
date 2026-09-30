@@ -1,0 +1,22 @@
+# --- Core Framework ---
+fastapi==0.128.0
+uvicorn[standard]
+pydantic-settings
+
+python-dotenv
+
+# --- I/O & Parsing ---
+aiofiles
+python-multipart
+
+# --- Templating ---
+jinja2
+
+# --- Logging ---
+python-json-logger
+
+# async http client
+httpx
+
+itsdangerous>=2.2.0
+argon2-cffi

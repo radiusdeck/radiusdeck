@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "radiusdeck"
+version = "0.1.0"
+description = "Web interface for managing FreeRADIUS servers"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiofiles",
+    "argon2-cffi",
+    "fastapi==0.128.0",
+    "httpx",
+    "itsdangerous>=2.2.0",
+    "jinja2",
+    "pydantic-settings",
+    "python-dotenv",
+    "python-json-logger",
+    "python-multipart",
+    "uvicorn[standard]",
+]
+
+[project.scripts]
+radiusdeck = "radiusdeck.cli.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+radiusdeck = ["templates/**/*.html", "static/**/*"]
+
+[tool.black]
+line-length = 88
+target-version = ['py312']
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I"] # E=Errors, F=Pyflakes, B=Bugbear, I=Isort
+ignore = []
+
+[tool.mypy]
+mypy_path = ["src"]
+explicit_package_bases = true
+exclude = ["(^|/)build/"]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+plugins = ["pydantic.mypy"] # Important for FastAPI!
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
+pythonpath = [
+    "src",
+    ".",
+]
+
+[tool.coverage.run]
+source = ["radiusdeck"]
+omit = [
+    "radiusdeck/templates/*",
+    "radiusdeck/static/*",
+    "*/radiusdeck/templates/*",
+    "*/radiusdeck/static/*",
+]
+
+[tool.coverage.report]
+omit = [
+    "radiusdeck/templates/*",
+    "radiusdeck/static/*",
+    "*/radiusdeck/templates/*",
+    "*/radiusdeck/static/*",
+]

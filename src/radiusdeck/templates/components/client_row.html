@@ -1,0 +1,38 @@
+<tr>
+    {% set can_write = can_write|default(true) %}
+    <td>{{ client.name }}</td>
+    <td>{{ client.ipaddr }}</td>
+    <td>
+        {% with client_secret_dom_id=client.secret_dom_id,
+                client_secret_reveal_url=client.secret_reveal_url,
+                client_secret_surface=client.secret_surface %}
+            {% include "components/client_secret_masked.html" %}
+        {% endwith %}
+    </td>
+    <td class="text-nowrap">
+        <button type="button"
+                class="btn btn-sm btn-outline-secondary"
+                data-bs-toggle="collapse"
+                data-bs-target="#collapse-{{ client.name }}"
+                aria-expanded="false"
+                aria-controls="collapse-{{ client.name }}">
+            Details
+        </button>
+        {% if can_write %}
+        <button type="button"
+                class="btn btn-sm btn-outline-primary"
+                hx-get="/ui/clients/{{ client.name }}/edit-form"
+                hx-target="#form-card"
+                hx-swap="outerHTML">
+            Edit
+        </button>
+        <button class="btn btn-sm btn-outline-danger"
+                hx-delete="/ui/clients/{{ client.name }}"
+                hx-confirm="Delete {{ client.name }}?"
+                hx-target="#client-block-{{ client.name }}"
+                hx-swap="outerHTML">
+            Delete
+        </button>
+        {% endif %}
+    </td>
+</tr>

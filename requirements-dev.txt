@@ -1,0 +1,21 @@
+# --- Testing ---
+pytest
+pytest-asyncio
+httpx
+playwright
+pytest-playwright
+
+# --- Type Checking ---
+mypy
+types-aiofiles  # This is needed only for mypy, not needed at runtime
+
+# --- Linting & Formatting ---
+ruff
+black
+
+# --- Security & Audit ---
+bandit
+pip-audit
+
+# test coverage
+pytest-cov

@@ -1,0 +1,57 @@
+<div class="client-block" id="{{ block_id }}" data-node-id="" data-depth="{{ depth }}">
+  <div class="card mb-2 client-block-card"
+       style="margin-left: {{ depth * 16 }}px; border-left: 4px solid {{ border_color }};">
+    <div class="card-body py-2">
+
+      <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+          <input type="text"
+                 class="form-control form-control-sm block-kind"
+                 placeholder="kind (e.g. limit)"
+                 required>
+        </div>
+        <div class="col-md-4">
+          <input type="text"
+                 class="form-control form-control-sm block-name"
+                 placeholder="name (optional)">
+        </div>
+        <div class="col-md-4 text-end">
+          <button type="button"
+                  class="btn btn-sm btn-outline-danger"
+                  onclick="this.closest('.client-block').remove()">
+            Remove block
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-2">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <div class="fw-semibold small text-muted">Assignments</div>
+          <button type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  hx-get="/ui/clients/assignment-row"
+                  hx-target="#assignments-{{ block_id }}"
+                  hx-swap="beforeend">
+            Add param
+          </button>
+        </div>
+        <div class="block-assignments" id="assignments-{{ block_id }}"></div>
+      </div>
+
+      <div class="mt-2">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <div class="fw-semibold small text-muted">Sub-blocks</div>
+          <button type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  hx-get="/ui/clients/block-form?depth={{ depth + 1 }}"
+                  hx-target="#blocks-{{ block_id }}"
+                  hx-swap="beforeend">
+            Add sub-block
+          </button>
+        </div>
+        <div class="block-children" id="blocks-{{ block_id }}"></div>
+      </div>
+
+    </div>
+  </div>
+</div>

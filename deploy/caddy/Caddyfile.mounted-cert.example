@@ -1,0 +1,20 @@
+# Private/corporate certificate example.
+#
+# Put certificate files on the host:
+#   ./certs/radiusdeck.crt
+#   ./certs/radiusdeck.key
+#
+# The certificate must include a Subject Alternative Name matching
+# radiusdeck.company.lan.
+
+radiusdeck.company.lan {
+    tls /certs/radiusdeck.crt /certs/radiusdeck.key
+
+    reverse_proxy radiusdeck:8000
+
+    header {
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer
+        X-Frame-Options DENY
+    }
+}

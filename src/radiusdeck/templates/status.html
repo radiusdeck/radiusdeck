@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-start gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">Status</h1>
+        <p class="text-muted mb-0">RadiusDeck deployment diagnostics</p>
+    </div>
+    <span class="badge text-bg-{{ status_badge_classes[report.overall_level.value] }} align-self-start">
+        {{ report.overall_level.value | upper }}
+    </span>
+</div>
+
+{% for section in report.sections %}
+<section class="mb-4" aria-labelledby="status-section-{{ section.id }}">
+    <h2 class="h5 border-bottom pb-2 mb-0" id="status-section-{{ section.id }}">
+        {{ section.title }}
+    </h2>
+    <div class="list-group list-group-flush">
+        {% for check in section.checks %}
+        <div class="list-group-item px-0 py-3 bg-transparent">
+            <div class="d-flex justify-content-between align-items-start gap-3">
+                <div class="min-w-0">
+                    <div class="fw-semibold">{{ check.label }}</div>
+                    <div class="text-muted small">{{ check.message }}</div>
+                    {% if check.details %}
+                    <div class="small mt-1 text-break"><code>{{ check.details }}</code></div>
+                    {% endif %}
+                    {% if check.remediation %}
+                    <div class="small mt-2"><span class="fw-semibold">Fix:</span> {{ check.remediation }}</div>
+                    {% endif %}
+                </div>
+                <span class="badge text-bg-{{ status_badge_classes[check.level.value] }} flex-shrink-0">
+                    {{ check.level.value | upper }}
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endfor %}
+{% endblock %}

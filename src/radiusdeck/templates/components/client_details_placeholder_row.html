@@ -1,0 +1,16 @@
+<tr>
+  <td colspan="4" class="p-0">
+    <div class="collapse"
+         id="collapse-{{ client.name }}"
+         hx-get="/ui/clients/{{ client.name }}/details"
+         hx-trigger="show.bs.collapse[event.target==this]"
+         hx-target="#details-body-{{ client.name }}"
+         hx-swap="innerHTML">
+      <div class="p-3 border-top bg-light">
+        <div id="details-body-{{ client.name }}" class="text-muted small">
+          Loading...
+        </div>
+      </div>
+    </div>
+  </td>
+</tr>

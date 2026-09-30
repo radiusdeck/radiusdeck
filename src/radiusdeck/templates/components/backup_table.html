@@ -1,0 +1,52 @@
+{% if message %}
+<div class="alert alert-success" role="status">{{ message }}</div>
+{% endif %}
+{% if rollback_result %}
+<div class="alert alert-{{ 'warning' if reload_failed else 'success' }}" role="status">
+    {% if reload_failed %}
+    Configuration restored, but FreeRADIUS reload failed.
+    {% else %}
+    Configuration restored successfully.
+    {% endif %}
+    Safety backup:
+    <code>{{ rollback_result.safety_backup.backup_id }}</code>.
+    <a class="btn btn-sm btn-outline-dark ms-2" href="/ui/clients">View restored clients</a>
+    {% if log_viewer_nav_visible %}<a href="/ui/logs">Logs</a> · {% endif %}<a href="/ui/status">Status</a>
+</div>
+<div id="backup-workspace" hx-swap-oob="innerHTML"></div>
+{% endif %}
+{% if not backup_enabled %}
+<div class="alert alert-warning" role="alert">
+    Backups are disabled. Client editing remains available without recovery points.
+</div>
+{% elif backups %}
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Created</th><th>Actor</th><th>Reason</th><th>Client</th>
+                <th>Source</th><th>Size</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for backup in backups %}
+            <tr>
+                <td class="text-nowrap">{{ backup.metadata.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}</td>
+                <td>{{ backup.metadata.actor }}</td>
+                <td>{{ backup.metadata.reason }}</td>
+                <td>{{ backup.metadata.client_name or '—' }}</td>
+                <td>{{ backup.metadata.source.value }}</td>
+                <td class="text-nowrap">{{ backup.size_bytes }} B</td>
+                <td class="text-nowrap">
+                    <button class="btn btn-sm btn-outline-danger" type="button"
+                            hx-get="/ui/backups/latest/confirm"
+                            hx-target="#backup-workspace" hx-swap="innerHTML">Restore latest</button>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">No backups have been created yet.</p>
+{% endif %}

@@ -1,0 +1,96 @@
+{# components/client_form.html #}
+{% set mode = mode|default("create") %}
+{% set form_errors_id = "form-errors" %}
+
+<form {% if mode=="create" %} id="add-form" hx-post="/ui/clients/add-tree" hx-target="#clients-table"
+    hx-select="tbody[id^='client-block-']" hx-select-oob="#reload-alerts" hx-swap="beforeend" {% else %} id="edit-form" hx-put="/ui/clients/{{ client.name }}/tree"
+    hx-target="#client-form-panel" hx-swap="innerHTML" {% endif %}>
+    <div class="mb-3">
+        <label class="form-label">Name</label>
+        <input type="text" name="name" class="form-control" placeholder="office-wifi"
+            value="{{ client.name if client is defined and client else '' }}" {% if mode=="edit" %}readonly{% endif %}
+            required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">IP Address</label>
+        <input type="text" name="ip_addr" class="form-control" placeholder="192.168.1.50"
+            value="{{ client.ipaddr if client is defined and client else '' }}" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" for="client-secret-input">Shared secret</label>
+        <input id="client-secret-input" type="password" name="secret" class="form-control"
+            autocomplete="new-password"
+            placeholder="{{ 'Leave blank to keep the current secret' if mode == 'edit' else 'radius_secret' }}"
+            {% if mode == "create" %}required{% endif %}>
+        {% if mode == "edit" %}
+        <div class="form-text">Leave blank to keep the current shared secret.</div>
+        {% endif %}
+    </div>
+
+    <hr class="my-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="fw-semibold">Extra parameters</div>
+        <button type="button" class="btn btn-sm btn-outline-secondary" hx-get="/ui/clients/assignment-row"
+            hx-target="#extra-params" hx-swap="beforeend">
+            + Add field
+        </button>
+    </div>
+
+    <div id="extra-params">
+        {% if mode == "edit" and client is defined and client and client.assignments %}
+        {% for a in client.assignments %}
+        {% include "components/assignment_row_filled.html" %}
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <hr class="my-3">
+
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="fw-semibold">Nested blocks</div>
+        <button type="button" class="btn btn-sm btn-outline-secondary" hx-get="/ui/clients/block-form?depth=0"
+            hx-target="#nested-blocks" hx-swap="beforeend">
+            + Add block
+        </button>
+    </div>
+
+    <div id="nested-blocks">
+        {% if mode == "edit" and client is defined and client and client.blocks %}
+        {% for b in client.blocks %}
+        {% set block = b %}
+        {% set depth = 0 %}
+        {% include "components/block_form_filled.html" %}
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <hr class="my-3">
+
+    <input type="hidden" name="payload_json" id="payload_json">
+
+    {% if mode == "create" %}
+    <button type="submit" class="btn btn-success w-100">
+        Add Client <span class="htmx-indicator spinner-border spinner-border-sm"></span>
+    </button>
+    {% else %}
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-fill">
+            Save Changes <span class="htmx-indicator spinner-border spinner-border-sm"></span>
+        </button>
+
+        <button type="button" class="btn btn-outline-secondary" hx-get="/ui/clients/create-form"
+            hx-target="#client-form-panel" hx-swap="innerHTML">
+            Cancel
+        </button>
+    </div>
+    {% endif %}
+
+    <div id="{{ form_errors_id }}" class="text-danger mt-2">
+        {% if error %}
+        {{ error }}
+        {% endif %}
+    </div>
+</form>

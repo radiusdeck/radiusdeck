@@ -1,0 +1,90 @@
+{% macro render_assignments(assignments) %}
+  <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle mb-2">
+      <thead>
+        <tr>
+          <th style="width: 30%;">Key</th>
+          <th>Value</th>
+          <th style="width: 30%;">Comment</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assignments %}
+          <tr>
+            <td><code>{{ a["key"] }}</code></td>
+            <td class="text-break">
+              {% if a["is_client_secret"] %}
+                {% include "components/client_secret_masked.html" %}
+              {% elif a["is_secret"] %}
+                <code class="text-body" aria-label="Shared secret hidden">************</code>
+                <span class="text-muted small ms-2">Hidden</span>
+              {% else %}
+                <code>{{ a["value"] }}</code>
+              {% endif %}
+            </td>
+            <td class="text-muted"><small>{{ a["comment"] or "" }}</small></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endmacro %}
+
+{% macro render_block(b, path) %}
+  {# comments #}
+  {% if b["comments"] %}
+    <div class="mb-2">
+      {% for c in b["comments"] %}
+        <div class="text-muted"><small>{{ c }}</small></div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {# assignments #}
+  {% if b["assignments"] %}
+    {{ render_assignments(b["assignments"]) }}
+  {% else %}
+    <div class="text-muted small mb-2">No direct assignments</div>
+  {% endif %}
+
+  {# nested blocks as accordion #}
+  {% if b["blocks"] %}
+    <div class="accordion accordion-flush" id="acc-{{ path }}">
+      {% for sb in b["blocks"] %}
+        {% set sb_path = path ~ "-" ~ loop.index %}
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="h-{{ sb_path }}">
+            <button class="accordion-button collapsed py-2"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#c-{{ sb_path }}"
+                    aria-controls="c-{{ sb_path }}">
+              <span class="me-2 fw-semibold">{{ sb["kind"] }}</span>
+              {% if sb["name"] %}<code>{{ sb["name"] }}</code>{% endif %}
+            </button>
+          </h2>
+
+          <div id="c-{{ sb_path }}"
+               class="accordion-collapse collapse"
+               aria-labelledby="h-{{ sb_path }}"
+               data-bs-parent="#acc-{{ path }}">
+            <div class="accordion-body">
+              {{ render_block(sb, sb_path) }}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endmacro %}
+
+<div class="p-2">
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <div>
+      <span class="badge text-bg-secondary">client</span>
+      <code class="ms-1">{{ details["name"] }}</code>
+    </div>
+  </div>
+
+  {{ render_block(details, "root-" ~ details["name"]) }}
+</div>

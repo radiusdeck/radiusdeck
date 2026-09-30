@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">Backups</h1>
+        <p class="text-muted mb-0">clients.conf recovery points</p>
+    </div>
+    {% for contribution in ui_slots['backups.toolbar'] %}
+        {% include contribution.template %}
+    {% endfor %}
+</div>
+
+<div id="backup-workspace" class="mb-4"></div>
+<div id="recovery-table-container">
+    {% include "components/backup_table.html" %}
+</div>
+{% for contribution in ui_slots['backups.sections'] %}
+    {% include contribution.template %}
+{% endfor %}
+{% endblock %}

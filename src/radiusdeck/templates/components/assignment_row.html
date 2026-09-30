@@ -1,0 +1,21 @@
+<div class="row g-2 align-items-center mb-2 assignment-row"
+     id="{{ row_id }}"
+     data-node-id="">
+  <div class="col-5">
+    <input type="text"
+           class="form-control form-control-sm assignment-key"
+           placeholder="key (e.g. shortname)">
+  </div>
+  <div class="col-5">
+    <input type="text"
+           class="form-control form-control-sm assignment-value"
+           placeholder="value (e.g. office)">
+  </div>
+  <div class="col-2 text-end">
+    <button type="button"
+            class="btn btn-sm btn-outline-danger"
+            onclick="this.closest('.assignment-row').remove()">
+      Remove
+    </button>
+  </div>
+</div>

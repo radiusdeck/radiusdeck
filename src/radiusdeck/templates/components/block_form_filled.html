@@ -1,0 +1,74 @@
+{% set palette = ["#0d6efd", "#198754", "#6f42c1", "#fd7e14", "#dc3545"] %}
+{% set border_color = palette[depth % (palette|length)] %}
+{% set dom_id = (block.id | replace(":", "_") | replace("/", "_")) %}
+
+<div class="client-block" data-node-id="{{ block.id }}" data-depth="{{ depth }}">
+  <div class="card mb-2 client-block-card"
+       style="margin-left: {{ depth * 16 }}px; border-left: 4px solid {{ border_color }};">
+    <div class="card-body py-2">
+
+      <div class="row g-2 align-items-center">
+        <div class="col-md-4">
+          <input type="text"
+                 class="form-control form-control-sm block-kind"
+                 value="{{ block.kind }}"
+                 required>
+        </div>
+        <div class="col-md-4">
+          <input type="text"
+                 class="form-control form-control-sm block-name"
+                 value="{{ block.name or '' }}"
+                 placeholder="name (optional)">
+        </div>
+        <div class="col-md-4 text-end">
+          <button type="button"
+                  class="btn btn-sm btn-outline-danger"
+                  onclick="this.closest('.client-block').remove()">
+            Remove block
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-2">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <div class="fw-semibold small text-muted">Assignments</div>
+          <button type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  hx-get="/ui/clients/assignment-row"
+                  hx-target="#assignments-{{ dom_id }}"
+                  hx-swap="beforeend">
+            Add param
+          </button>
+        </div>
+
+        <div class="block-assignments" id="assignments-{{ dom_id }}">
+          {% for a in block.assignments %}
+            {% include "components/assignment_row_filled.html" %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="mt-2">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <div class="fw-semibold small text-muted">Sub-blocks</div>
+          <button type="button"
+                  class="btn btn-sm btn-outline-secondary"
+                  hx-get="/ui/clients/block-form?depth={{ depth + 1 }}"
+                  hx-target="#blocks-{{ dom_id }}"
+                  hx-swap="beforeend">
+            Add sub-block
+          </button>
+        </div>
+
+        <div class="block-children" id="blocks-{{ dom_id }}">
+          {% for sb in block.blocks %}
+            {% set block = sb %}
+            {% set depth = depth + 1 %}
+            {% include "components/block_form_filled.html" %}
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

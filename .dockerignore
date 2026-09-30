@@ -1,0 +1,7 @@
+**
+!dist/
+!dist/community/
+!dist/community/radiusdeck-*.whl
+!dist/community/community-installed-manifest.json
+!scripts/
+!scripts/artifact_checks.py

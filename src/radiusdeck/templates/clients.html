@@ -1,0 +1,38 @@
+{# src/radiusdeck/templates/clients.html #}
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <!-- Левая колонка: Create/Edit form panel -->
+    {% if can_write|default(true) %}
+    <div class="col-md-4">
+        <div id="client-form-panel">
+            {% set mode = "create" %}
+            {% include "components/client_form_card.html" %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Правая колонка: Clients table -->
+    <div class="{{ 'col-md-8' if can_write|default(true) else 'col-md-12' }}">
+        <div class="card shadow-sm">
+            <div class="card-header">Clients List</div>
+            <div class="card-body p-0">
+                <table class="table table-striped table-hover mb-0" id="clients-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Name</th>
+                            <th>IP Address</th>
+                            <th>Secret</th>
+                            <th style="width: 120px;">Actions</th>
+                        </tr>
+                    </thead>
+                    {%- for client in clients %}
+                    {% include "components/client_row_with_details.html" %}
+                    {%- endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
