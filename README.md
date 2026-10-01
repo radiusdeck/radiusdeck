@@ -88,3 +88,13 @@ make test-community-image
 See [architecture](docs/community/architecture.md),
 [backups](docs/community/backups.md), and the
 [extension interface](docs/extensions.md) for the main runtime contracts.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and pull
+request requirements. Report security vulnerabilities according to
+[SECURITY.md](SECURITY.md).
+
+## License
+
+RadiusDeck is available under the [MIT License](LICENSE).
