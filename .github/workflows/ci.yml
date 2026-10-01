@@ -23,6 +23,8 @@ jobs:
         run: black --check src tests scripts/artifact_checks.py
       - name: Type check
         run: mypy src tests scripts/artifact_checks.py
+      - name: Security lint
+        run: bandit -q -r src
 
   unit-integration:
     runs-on: ubuntu-latest

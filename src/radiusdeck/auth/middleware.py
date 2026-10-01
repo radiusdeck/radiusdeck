@@ -77,20 +77,39 @@ class ExtensionAuthenticationMiddleware(BaseHTTPMiddleware):
         if self._browser_provider is not None:
             result = await self._browser_provider.authenticate(request)
             if result.disposition is AuthenticationDisposition.REJECTED:
-                assert result.response is not None
-                return result.response
+                response = result.response
+                if response is None:
+                    raise RuntimeError(
+                        "Browser authentication rejected without a response"
+                    )
+                return response
             if result.disposition is AuthenticationDisposition.AUTHENTICATED:
-                request.state.user = result.user
+                user = result.user
+                if user is None:
+                    raise RuntimeError(
+                        "Browser authentication succeeded without a user"
+                    )
+                request.state.user = user
 
         for provider_id in policy.authentication_provider_ids:
             provider = self._providers[provider_id]
             result = await provider.authenticate(request)
             if result.disposition is AuthenticationDisposition.REJECTED:
-                assert result.response is not None
-                return result.response
+                response = result.response
+                if response is None:
+                    raise RuntimeError(
+                        f"Authentication provider {provider_id!r} rejected "
+                        "without a response"
+                    )
+                return response
             if result.disposition is AuthenticationDisposition.AUTHENTICATED:
-                assert result.user is not None
-                request.state.user = result.user
+                user = result.user
+                if user is None:
+                    raise RuntimeError(
+                        f"Authentication provider {provider_id!r} succeeded "
+                        "without a user"
+                    )
+                request.state.user = user
                 request.state.authenticated_provider_id = provider_id
                 break
         response = await call_next(request)

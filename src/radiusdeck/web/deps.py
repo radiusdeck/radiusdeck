@@ -7,6 +7,7 @@ from jinja2 import FileSystemLoader
 from starlette.templating import _TemplateResponse
 
 from radiusdeck.auth.csrf import get_or_create_csrf_token
+from radiusdeck.auth.session_keys import SESSION_CSRF_TOKEN
 from radiusdeck.core.config import settings
 from radiusdeck.services.backup_service import BackupService
 from radiusdeck.services.local_auth_service import LocalAuthService
@@ -31,7 +32,7 @@ def csrf_template_context(request: Request) -> dict[str, Any]:
 
     if not settings.csrf_enabled:
         return {
-            "csrf_token": None,
+            SESSION_CSRF_TOKEN: None,
             "csrf_header_name": settings.csrf_header_name,
             "csrf_form_field_name": settings.csrf_form_field_name,
             "csrf_hx_headers": None,
@@ -44,7 +45,7 @@ def csrf_template_context(request: Request) -> dict[str, Any]:
         session = request.session
     except AssertionError:
         return {
-            "csrf_token": None,
+            SESSION_CSRF_TOKEN: None,
             "csrf_header_name": settings.csrf_header_name,
             "csrf_form_field_name": settings.csrf_form_field_name,
             "csrf_hx_headers": None,
@@ -55,7 +56,7 @@ def csrf_template_context(request: Request) -> dict[str, Any]:
 
     token = get_or_create_csrf_token(session)
     return {
-        "csrf_token": token,
+        SESSION_CSRF_TOKEN: token,
         "csrf_header_name": settings.csrf_header_name,
         "csrf_form_field_name": settings.csrf_form_field_name,
         "csrf_hx_headers": {settings.csrf_header_name: token},

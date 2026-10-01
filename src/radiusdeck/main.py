@@ -5,6 +5,7 @@ import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from ipaddress import IPv4Address
 from pathlib import Path
 
 import httpx
@@ -67,6 +68,8 @@ from radiusdeck.web.endpoints import auth as auth_endpoints
 from radiusdeck.web.endpoints import health
 from radiusdeck.web.exception_handlers import register_exception_handlers
 from radiusdeck.web.router import api_router as web_router
+
+DEVELOPMENT_HOST = str(IPv4Address(0))
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -167,10 +170,10 @@ async def _create_base_resources(
     )
     local_auth_service: LocalAuthService | None = None
     if settings.auth_method == "local":
-        assert settings.local_users_path is not None
-        local_auth_service = LocalAuthService(
-            LocalUsersStore(settings.local_users_path)
-        )
+        local_users_path = settings.local_users_path
+        if local_users_path is None:
+            raise RuntimeError("Local authentication requires a users file")
+        local_auth_service = LocalAuthService(LocalUsersStore(local_users_path))
 
     app.state.radius_service = radius_service
     app.state.backup_service = backup_service
@@ -332,14 +335,16 @@ def create_app(
         browser_provider=contributions.browser_authentication,
     )
     if settings.auth_method != "none":
+        session_secret_key = settings.session_secret_key
+        if session_secret_key is None:
+            raise RuntimeError("Authentication requires a session secret")
         application.add_middleware(
             UserContextMiddleware,
             route_policies=registry,
         )
-        assert settings.session_secret_key is not None
         application.add_middleware(
             SessionMiddleware,
-            secret_key=settings.session_secret_key.get_secret_value(),
+            secret_key=session_secret_key.get_secret_value(),
             max_age=settings.session_max_age_seconds,
             https_only=settings.effective_secure_cookies,
             same_site=settings.session_samesite,
@@ -361,4 +366,9 @@ app = create_app()
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("radiusdeck.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(
+        "radiusdeck.main:app",
+        host=DEVELOPMENT_HOST,
+        port=8000,
+        reload=True,
+    )

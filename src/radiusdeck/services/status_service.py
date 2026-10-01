@@ -87,8 +87,10 @@ class StatusService:
         )
 
     async def _backups_section(self) -> StatusSection:
-        assert self._backup_service is not None
-        if not self._backup_service.enabled:
+        backup_service = self._backup_service
+        if backup_service is None:
+            raise RuntimeError("Backup status requested without a backup service")
+        if not backup_service.enabled:
             return StatusSection(
                 id="backups",
                 title="Backups",
@@ -116,7 +118,7 @@ class StatusService:
                 ],
             )
 
-        store = self._backup_service.store
+        store = backup_service.store
         diagnostics = await self._file_diagnostics.inspect_directory(store.directory)
         exists_ok = diagnostics.exists and diagnostics.is_directory
         checks = [
@@ -171,7 +173,7 @@ class StatusService:
             )
         else:
             try:
-                latest_entry = await self._backup_service.get_latest_recovery_point()
+                latest_entry = await backup_service.get_latest_recovery_point()
             except BackupError:
                 latest = StatusCheck(
                     id="backups.latest",
@@ -480,7 +482,8 @@ class StatusService:
                 ],
             )
 
-        assert diagnostics is not None
+        if diagnostics is None:
+            raise RuntimeError("Log status requested without file diagnostics")
         checks = [
             StatusCheck(
                 id="logs.enabled",

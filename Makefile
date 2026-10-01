@@ -39,6 +39,7 @@ lint: ## linting
 	ruff check .
 	black --check .
 	mypy .
+	bandit -q -r src
 
 test: ## tests
 	pytest tests/ -v

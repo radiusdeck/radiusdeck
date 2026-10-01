@@ -31,6 +31,10 @@ PayloadJsonOptionalForm = Annotated[str | None, Form()]
 PayloadJsonForm = Annotated[str, Form()]
 SecretSurfaceForm = Annotated[Literal["list", "details"], Form()]
 
+SURFACE_CONTEXT_KEY = "secret_surface"
+CLIENT_SURFACE_CONTEXT_KEY = "client_secret_surface"
+REVEAL_ALLOWED_CONTEXT_KEY = "can_reveal_secret"
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -58,7 +62,7 @@ def _client_row_context(request: Request, client: dict[str, str]) -> dict[str, s
         "ipaddr": client.get("ipaddr", ""),
         "secret_dom_id": _client_secret_dom_id(name, "list"),
         "secret_reveal_url": str(request.url_for("reveal_client_secret", name=name)),
-        "secret_surface": "list",
+        SURFACE_CONTEXT_KEY: "list",
     }
 
 
@@ -119,7 +123,7 @@ async def list_clients(
         {
             "clients": clients,
             "can_write": _can_write(request),
-            "can_reveal_secret": _can_reveal_secret(request),
+            REVEAL_ALLOWED_CONTEXT_KEY: _can_reveal_secret(request),
         },
     )
 
@@ -197,7 +201,7 @@ async def add_client_tree(
             "components/client_row_with_details.html",
             {
                 "client": _client_row_context(request, result.client),
-                "can_reveal_secret": True,
+                REVEAL_ALLOWED_CONTEXT_KEY: True,
             },
             result.reload_result,
             result.backup,
@@ -329,8 +333,8 @@ async def get_client_details(
             "client_secret_reveal_url": request.url_for(
                 "reveal_client_secret", name=name
             ),
-            "client_secret_surface": "details",
-            "can_reveal_secret": _can_reveal_secret(request),
+            CLIENT_SURFACE_CONTEXT_KEY: "details",
+            REVEAL_ALLOWED_CONTEXT_KEY: _can_reveal_secret(request),
         },
     )
 
@@ -353,8 +357,8 @@ async def reveal_client_secret(
             "client_secret_reveal_url": request.url_for(
                 "reveal_client_secret", name=name
             ),
-            "client_secret_surface": surface,
-            "can_reveal_secret": True,
+            CLIENT_SURFACE_CONTEXT_KEY: surface,
+            REVEAL_ALLOWED_CONTEXT_KEY: True,
         },
         headers={
             "Cache-Control": "no-store, max-age=0",

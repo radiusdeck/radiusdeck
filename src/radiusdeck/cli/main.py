@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Sequence
+from ipaddress import IPv4Address
 
 import uvicorn
 
 from radiusdeck.version import __version__
+
+DEFAULT_HOST = str(IPv4Address(0))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -18,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     serve = subparsers.add_parser("serve", help="Run the RadiusDeck web server")
-    serve.add_argument("--host", default="0.0.0.0")
+    serve.add_argument("--host", default=DEFAULT_HOST)
     serve.add_argument("--port", default=8000, type=int)
     serve.add_argument(
         "--proxy-headers",

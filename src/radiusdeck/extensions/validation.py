@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from types import MappingProxyType
 
-from jinja2 import Environment, FileSystemLoader, TemplateError, meta
+from jinja2 import Environment, FileSystemLoader, TemplateError, meta, select_autoescape
 
 from radiusdeck.extensions.api import (
     RADIUSDECK_EXTENSION_API,
@@ -118,19 +118,20 @@ def collect_contributions(
         "logs.toolbar",
         "logs.sections",
     }
+    loader = FileSystemLoader(
+        [str(p) for p in template_paths]
+        + [str(Path(__file__).parent.parent / "templates")]
+    )
     env = Environment(
-        loader=FileSystemLoader(
-            [str(p) for p in template_paths]
-            + [str(Path(__file__).parent.parent / "templates")]
-        )
+        loader=loader,
+        autoescape=select_autoescape(enabled_extensions=("html", "htm", "xml")),
     )
 
     def validate_template(name: str, seen: set[str]) -> None:
         if name in seen:
             return
         seen.add(name)
-        assert env.loader is not None
-        source, _, _ = env.loader.get_source(env, name)
+        source, _, _ = loader.get_source(env, name)
         parsed = env.parse(source)
         env.get_template(name)
         for reference in meta.find_referenced_templates(parsed):
