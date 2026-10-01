@@ -2,6 +2,7 @@
 pytest
 pytest-asyncio
 httpx
+httpx2
 playwright
 pytest-playwright
 

@@ -22,7 +22,10 @@ from radiusdeck.extensions import (
     StructuralContributions,
 )
 from radiusdeck.extensions.errors import RoutePolicyError
-from radiusdeck.extensions.route_policy import build_route_policy_registry
+from radiusdeck.extensions.route_policy import (
+    build_route_policy_registry,
+    policies_for_router,
+)
 from radiusdeck.main import create_app
 
 
@@ -36,6 +39,28 @@ def _policy_contribution(
         path=path,
         methods=frozenset({method}),
         policy=RoutePolicy(access, csrf_protected=False),
+    )
+
+
+def test_router_policies_use_effective_paths_from_included_routers() -> None:
+    child = APIRouter()
+
+    @child.get("/items/{item_id}")
+    async def item(item_id: str) -> dict[str, str]:
+        return {"item_id": item_id}
+
+    parent = APIRouter()
+    parent.include_router(child, prefix="/nested")
+    policy = RoutePolicy(RouteAccess.PUBLIC, csrf_protected=False)
+
+    contributions = policies_for_router(parent, prefix="/api", policy=policy)
+
+    assert contributions == (
+        RoutePolicyContribution(
+            path="/api/nested/items/{item_id}",
+            methods=frozenset({"GET"}),
+            policy=policy,
+        ),
     )
 
 

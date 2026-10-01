@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 from fastapi import APIRouter
+from fastapi.routing import RouteContext, iter_route_contexts
 from starlette.routing import BaseRoute, Match, Mount, Route
 from starlette.types import Scope
 
@@ -34,15 +35,22 @@ def policies_for_router(
     policy: RoutePolicy,
 ) -> tuple[RoutePolicyContribution, ...]:
     contributions: list[RoutePolicyContribution] = []
-    for route in router.routes:
-        if not isinstance(route, Route):
+    for route in iter_route_contexts(router.routes):
+        if not isinstance(route.original_route, Route):
             raise RoutePolicyError(
-                f"Unsupported route type in router contribution: {type(route).__name__}"
+                "Unsupported route type in router contribution: "
+                f"{type(route.original_route).__name__}"
+            )
+        path = route.path
+        if not isinstance(path, str):
+            raise RoutePolicyError(
+                "Router contribution route has no path: "
+                f"{type(route.original_route).__name__}"
             )
         methods = frozenset(route.methods or ())
         contributions.append(
             RoutePolicyContribution(
-                path=join_route_path(prefix, route.path),
+                path=join_route_path(prefix, path),
                 methods=methods,
                 policy=policy,
             )
@@ -56,7 +64,7 @@ def policies_for_routes(
     policy: RoutePolicy,
 ) -> tuple[RoutePolicyContribution, ...]:
     contributions: list[RoutePolicyContribution] = []
-    for route in routes:
+    for route in iter_route_contexts(tuple(routes)):
         path = getattr(route, "path", None)
         if not isinstance(path, str):
             raise RoutePolicyError(
@@ -74,7 +82,7 @@ def policies_for_routes(
 
 @dataclass(frozen=True)
 class _Binding:
-    route: BaseRoute
+    route: RouteContext
     policies: dict[str, RoutePolicy]
 
 
@@ -98,8 +106,8 @@ def build_route_policy_registry(
     *,
     authentication_provider_ids: frozenset[str],
 ) -> RoutePolicyRegistry:
-    route_list = tuple(routes)
-    route_identities: dict[tuple[str, str], tuple[BaseRoute, str]] = {}
+    route_list = tuple(iter_route_contexts(tuple(routes)))
+    route_identities: dict[tuple[str, str], tuple[RouteContext, str]] = {}
     route_methods: dict[int, set[str]] = {}
     route_paths: dict[int, str] = {}
 
@@ -156,10 +164,10 @@ def build_route_policy_registry(
     return RoutePolicyRegistry(tuple(bindings))
 
 
-def _route_methods(route: BaseRoute) -> set[str]:
-    if isinstance(route, Mount):
+def _route_methods(route: RouteContext) -> set[str]:
+    if isinstance(route.original_route, Mount):
         return {"*"}
-    if isinstance(route, Route):
+    if isinstance(route.original_route, Route):
         methods = route.methods
         if not methods:
             raise RoutePolicyError(
@@ -167,7 +175,8 @@ def _route_methods(route: BaseRoute) -> set[str]:
             )
         return {method.upper() for method in methods}
     raise RoutePolicyError(
-        f"Registered route type is not supported: {type(route).__name__}"
+        "Registered route type is not supported: "
+        f"{type(route.original_route).__name__}"
     )
 
 

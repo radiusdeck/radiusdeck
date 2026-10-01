@@ -22,7 +22,7 @@ test -n "$wheel"
   inspect-community-wheel "$wheel"
 
 "$python_command" -m venv "$environment/venv"
-"$environment/venv/bin/pip" install "$wheel" pytest pytest-asyncio
+"$environment/venv/bin/pip" install "$wheel" pytest pytest-asyncio httpx2
 cd /tmp
 PYTHONPATH= "$environment/venv/bin/python" \
   "$repository/scripts/artifact_checks.py" installed-manifest \
