@@ -5,6 +5,7 @@ workflow and the checks expected for a pull request.
 
 ## Before you start
 
+- Read and follow the [Code of Conduct](.github/CODE_OF_CONDUCT.md).
 - Search existing issues and pull requests before opening a new one.
 - Open an issue before starting a large feature or architectural change so its
   scope can be agreed on first.
