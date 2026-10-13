@@ -8,6 +8,9 @@ blank lines, ordering, and nested blocks.
 
 *Community interface with fictional devices and masked shared secrets.*
 
+[Watch the 31-second demo: add a device, change its IP, and restore the latest backup](docs/community/media/client-lifecycle.webm)
+([steps and recording notes](docs/community/media/README.md)).
+
 ## Included capabilities
 
 - list, create, edit, and delete FreeRADIUS clients;
