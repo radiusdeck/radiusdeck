@@ -1,0 +1,9 @@
+{% with client=none %}
+  {% include "components/client_form_card.html" %}
+{% endwith %}
+{# Keep tbody inside a table while the browser parses the HTMX response. #}
+<table>
+  {% with swap_oob=true %}
+    {% include "components/client_row_with_details.html" %}
+  {% endwith %}
+</table>

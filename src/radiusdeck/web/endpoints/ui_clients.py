@@ -296,8 +296,13 @@ async def update_client_tree(
     resp = HTMLResponse(
         content=_render_with_reload_alert(
             request,
-            "components/client_form_card.html",
-            {"mode": "create"},
+            "components/client_update_response.html",
+            {
+                "mode": "create",
+                "client": _client_row_context(request, result.client),
+                "can_write": _can_write(request),
+                REVEAL_ALLOWED_CONTEXT_KEY: _can_reveal_secret(request),
+            },
             result.reload_result,
             result.backup,
         ),

@@ -1,4 +1,4 @@
-<tbody id="client-block-{{ client.name }}">
+<tbody id="client-block-{{ client.name }}"{% if swap_oob|default(false) %} hx-swap-oob="outerHTML"{% endif %}>
   {% include "components/client_row.html" %}
   {% include "components/client_details_placeholder_row.html" %}
 </tbody>

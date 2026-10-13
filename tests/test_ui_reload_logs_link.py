@@ -105,6 +105,9 @@ def test_update_reload_failure_includes_logs_link(
 
     assert response.status_code == 200
     _assert_reload_warning_with_logs_link(response.text)
+    assert 'id="client-block-LOCAL" hx-swap-oob="outerHTML"' in response.text
+    assert "127.0.0.2" in response.text
+    assert "newsecret" not in response.text
 
 
 def test_delete_reload_failure_includes_logs_link(
