@@ -8,7 +8,8 @@ blank lines, ordering, and nested blocks.
 
 *Community interface with fictional devices and masked shared secrets.*
 
-[Watch the 31-second demo: add a device, change its IP, and restore the latest backup](docs/community/media/client-lifecycle.webm)
+[client-lifecycle.webm](https://github.com/user-attachments/assets/249f2959-8b14-416d-8295-b880a2d8fa08)
+
 ([steps and recording notes](docs/community/media/README.md)).
 
 ## Included capabilities
