@@ -4,6 +4,10 @@ RadiusDeck is a lightweight web interface for managing FreeRADIUS text
 configuration. It edits `clients.conf` through a parser that preserves comments,
 blank lines, ordering, and nested blocks.
 
+![RadiusDeck Clients page with a new client form, example network devices, and expanded client details](docs/community/images/clients.png)
+
+*Community interface with fictional devices and masked shared secrets.*
+
 ## Included capabilities
 
 - list, create, edit, and delete FreeRADIUS clients;
