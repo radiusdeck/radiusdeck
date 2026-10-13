@@ -113,7 +113,12 @@ def test_put_tree_success_updates_file_and_triggers_event(
     # Main part = create form (form reset)
     assert 'id="add-form"' in html
 
-    # HX-Trigger to reload table row via JS
+    # The updated row is delivered separately from the reset form.
+    assert 'id="client-block-LOCAL" hx-swap-oob="outerHTML"' in html
+    assert "127.0.0.2" in html
+    assert "newsecret" not in html
+
+    # Preserve the existing clientUpdated notification.
     trigger_header = resp.headers.get("hx-trigger", "")
     assert "clientUpdated" in trigger_header
 

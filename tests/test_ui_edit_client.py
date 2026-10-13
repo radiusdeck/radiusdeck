@@ -15,6 +15,7 @@ class TestTreeEditE2E:
 
         assert 'id="form-card"' in html
         assert 'id="edit-form"' in html
+        assert 'hx-select="#form-card"' in html
         assert "Edit Client" in html
         assert 'name="name"' in html
         assert "readonly" in html
@@ -253,6 +254,7 @@ class TestTreeEditE2E:
         )
         assert resp.status_code == 400
         assert 'id="edit-form"' in resp.text
+        assert 'hx-swap-oob="outerHTML"' not in resp.text
 
         text = env_complex.config_path.read_text(encoding="utf-8")
         assert "shortname = old" in text
@@ -300,6 +302,24 @@ class TestTreeEditE2E:
         assert "clientUpdated" in trigger
         assert "LOCAL" in trigger
         assert 'id="add-form"' in resp.text
+
+        row = re.search(
+            r'<table>\s*(<tbody\b[^>]*id="client-block-LOCAL"[^>]*>.*?</tbody>)\s*</table>',
+            resp.text,
+            re.DOTALL,
+        )
+        assert row is not None, "The response must include the updated client block"
+        assert 'hx-swap-oob="outerHTML"' in row.group(1)
+        assert "127.0.0.9" in row.group(1)
+        assert "127.0.0.1" not in row.group(1)
+        assert 'id="collapse-LOCAL"' in row.group(1)
+        assert 'id="details-body-LOCAL"' in row.group(1)
+        assert "Show shared secret" in row.group(1)
+        assert "************" in row.group(1)
+        assert "zzz" not in resp.text
+        assert "testing123" not in resp.text
+        assert resp.text.count('id="client-block-LOCAL"') == 1
+        assert 'value="LOCAL"' not in resp.text  # The create form stays empty.
 
         text = env_complex.config_path.read_text(encoding="utf-8")
         assert "ipaddr = 127.0.0.9" in text
