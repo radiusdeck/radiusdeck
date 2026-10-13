@@ -8,6 +8,10 @@ blank lines, ordering, and nested blocks.
 
 *Community interface with fictional devices and masked shared secrets.*
 
+[client-lifecycle.webm](https://github.com/user-attachments/assets/249f2959-8b14-416d-8295-b880a2d8fa08)
+
+([steps and recording notes](docs/community/media/README.md)).
+
 ## Included capabilities
 
 - list, create, edit, and delete FreeRADIUS clients;
