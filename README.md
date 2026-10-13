@@ -13,6 +13,84 @@ blank lines, ordering, and nested blocks.
 - open or local authentication;
 - a neutral extension interface for separately installed Python packages.
 
+## Typical use cases
+
+A RADIUS client is a device that sends requests to FreeRADIUS, such as a wireless
+access point, switch, or VPN gateway. The **Clients** page manages these devices;
+end-user accounts and authentication policies are configured separately in
+FreeRADIUS.
+
+These scenarios assume RadiusDeck is installed and connected to the
+`clients.conf` used by your FreeRADIUS server. Sign in if local authentication
+is enabled, using an account with permission to make configuration changes.
+
+### Add an access point or VPN gateway
+
+1. Open **Clients** and fill in the new client form:
+   - **Name**: a descriptive name, such as `office-ap-01`.
+   - **IP Address**: the source IP address FreeRADIUS will see for requests from
+     the device. For example, `192.0.2.10` is an illustration; use your device's
+     actual address.
+   - **Shared secret**: a generated secret that you will also configure on the
+     device.
+2. Click **Add Client**. Confirm that the device appears in the client list and
+   check any reload message.
+3. Configure the device to use your FreeRADIUS server and the same shared secret.
+4. Apply the configuration as described below, then test authentication from the
+   device. Use **Logs**, when enabled, to help investigate failures.
+
+Saving updates `clients.conf`. Automatic reload requires a configured sidecar
+with `APP_SIDECAR_RELOAD_ENABLED=true`; otherwise, apply the change through your
+normal FreeRADIUS reload or restart procedure. A successful save does not by
+itself confirm that the running server has applied the change or that device
+authentication succeeds. This also applies to edits and restores below.
+
+### Change a device address or rotate its shared secret
+
+1. Find the device in **Clients** and click **Edit**.
+2. To change its address, update **IP Address**. Leave **Shared secret** blank
+   to keep the current secret.
+3. To rotate its secret, enter a new **Shared secret** and coordinate the same
+   change on the device. Requests may fail while the two values differ.
+4. Click **Save Changes**, check the reload result, and test the device again
+   after applying the configuration.
+
+For additional settings supported by your FreeRADIUS configuration, use
+**Extra parameters** and **Nested blocks** in the same form. Editing merges
+changes into the existing client block while preserving its retained comments
+and the order of existing entries.
+
+### Undo the latest configuration change
+
+With automatic backups enabled and a recovery point available:
+
+1. Open **Backups** and review the latest recovery point's time and reason.
+2. Click **Restore latest**, review the confirmation, and click **Restore latest**
+   again to proceed.
+3. Return to **Clients** to check the restored configuration and review any
+   reload warning.
+
+Restoring replaces the entire `clients.conf`, including all clients, with the
+latest recovery point. A safety backup of the current file is created first.
+If reload fails, the restored file remains in place; resolve the reload problem
+before expecting FreeRADIUS to use it. See [backups](docs/community/backups.md)
+for storage and retention settings.
+
+### Diagnose a change that has not taken effect
+
+1. Review the message after saving: a reload failure can occur after the
+   configuration file has already been saved.
+2. Open **Status** to inspect configuration file access, backup storage, and
+   the configured reload integration. Follow the remediation shown for a
+   failed check.
+3. If log viewing is enabled, open **Logs**, select the number of recent lines,
+   and click **Refresh** after reproducing the problem on the device.
+
+Log viewing requires `APP_FREERADIUS_LOG_VIEWER_ENABLED=true` and read access to
+the file specified by `APP_FREERADIUS_LOG_PATH`. The page displays recent lines
+from that file with secret redaction; available details depend on what
+FreeRADIUS writes to the log.
+
 ## Requirements
 
 - Python 3.12 or newer;
