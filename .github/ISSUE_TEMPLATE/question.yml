@@ -1,0 +1,39 @@
+name: Ask a question
+description: Get help installing or using RadiusDeck Community.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Search [existing issues](https://github.com/radiusdeck/radiusdeck/issues?q=is%3Aissue), including closed ones, first.
+        Please use English when possible. Unsure whether it is a bug? Start here.
+        Issues are public: remove passwords, shared secrets, tokens, and private configuration from text and attachments.
+        For suspected vulnerabilities, follow [SECURITY.md](https://github.com/radiusdeck/radiusdeck/blob/main/SECURITY.md).
+        See [Getting help](https://github.com/radiusdeck/radiusdeck/blob/main/SUPPORT.md) for guidance.
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What are you trying to do, where are you stuck, and what have you already tried?
+      placeholder: Describe your goal and the step you need help with.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: RadiusDeck version (optional)
+      description: Release version, Docker image tag, or source commit, if known.
+      placeholder: e.g. ghcr.io/radiusdeck/radiusdeck:0.1.0
+  - type: dropdown
+    id: installation
+    attributes:
+      label: Installation method (optional)
+      options:
+        - Docker
+        - Docker Compose
+        - Local Python process
+        - Other / not sure
+  - type: textarea
+    id: details
+    attributes:
+      label: Relevant details (optional)
+      description: Include environment details, a short error message, or a sanitized screenshot if it helps explain your question. Remove sensitive information before sharing.
