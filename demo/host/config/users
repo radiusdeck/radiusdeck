@@ -1,0 +1,3 @@
+# Test-only end-user account, configured independently from RADIUS clients.
+demo-user Cleartext-Password := "demo-password"
+    Reply-Message := "RadiusDeck host demo: authentication succeeded"
