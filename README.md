@@ -107,10 +107,77 @@ FreeRADIUS writes to the log.
 
 ## Requirements
 
-- Python 3.12 or newer;
+- Docker for the published Linux amd64 image, or Python 3.12 or newer for a
+  local Python installation;
 - a readable and writable `clients.conf`;
 - optional access to a FreeRADIUS log file;
 - optional access to a reload sidecar.
+
+## Install with Docker
+
+The published Community image is
+`ghcr.io/radiusdeck/radiusdeck:0.1.0` (Linux amd64). The following commands
+start a local instance with an isolated test configuration on a Linux host.
+
+Create a directory for configuration and persistent backups, then download
+the image:
+
+```bash
+mkdir -p radiusdeck-data/backups
+touch radiusdeck-data/clients.conf
+docker pull ghcr.io/radiusdeck/radiusdeck:0.1.0
+```
+
+From the same directory, start RadiusDeck:
+
+```bash
+docker run -d \
+  --name radiusdeck \
+  --restart unless-stopped \
+  --user "$(id -u):$(id -g)" \
+  -p 127.0.0.1:8000:8000 \
+  --mount "type=bind,source=$PWD/radiusdeck-data,target=/data" \
+  -e APP_RADIUS_CLIENTS_PATH=/data/clients.conf \
+  -e APP_BACKUP_DIR=/data/backups \
+  -e APP_BACKUP_ENABLED=true \
+  -e APP_AUTH_METHOD=none \
+  -e APP_SIDECAR_RELOAD_ENABLED=false \
+  ghcr.io/radiusdeck/radiusdeck:0.1.0
+```
+
+Open **<http://127.0.0.1:8000/ui/clients>**. The example runs as your current
+UID and GID so it can update the files you created. The image's default user
+is `10001:10001`. Configuration and backups remain in `radiusdeck-data/`
+when the container is stopped or removed.
+
+Check startup logs and health:
+
+```bash
+docker logs radiusdeck
+docker inspect --format '{{.State.Health.Status}}' radiusdeck
+```
+
+Health can initially show `starting`; the healthcheck runs every 30 seconds.
+The expected status is `healthy`.
+
+To stop and start the same container:
+
+```bash
+docker stop radiusdeck
+docker start radiusdeck
+```
+
+This quick start binds the web interface to loopback and uses open access.
+For remote access, configure authentication and HTTPS. To manage an existing
+FreeRADIUS server, mount the directory containing its `clients.conf` and set
+`APP_RADIUS_CLIENTS_PATH` to that file's path inside the container. Apply
+saved changes through your FreeRADIUS restart procedure, or configure the
+optional reload sidecar. The [host demo](demo/README.md) shows real
+authentication checks against an isolated FreeRADIUS process.
+
+The downloaded `0.1.0` image was checked with both the default user and a host
+UID/GID: startup, client creation and editing in the browser, exact backup
+restore, data persistence after restart, and Docker healthchecks passed.
 
 ## Local installation
 
