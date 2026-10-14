@@ -10,7 +10,7 @@ blank lines, ordering, and nested blocks.
 
 ### See it work with a real FreeRADIUS server
 
-[![One-minute demo: add a client in RadiusDeck, restart FreeRADIUS, and get Access-Accept](docs/community/media/host-demo.png)](docs/community/media/host-demo.webm)
+[host-demo.webm](https://github.com/user-attachments/assets/b65981c5-8291-4a85-804c-a89ee36bc71f)
 
 In under a minute: add a client in RadiusDeck, restart FreeRADIUS, and get
 `Access-Accept` from a test request. Then rotate the shared secret and roll it
