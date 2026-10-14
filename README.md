@@ -8,9 +8,15 @@ blank lines, ordering, and nested blocks.
 
 *Community interface with fictional devices and masked shared secrets.*
 
-[client-lifecycle.webm](https://github.com/user-attachments/assets/249f2959-8b14-416d-8295-b880a2d8fa08)
+### See it work with a real FreeRADIUS server
 
-([steps and recording notes](docs/community/media/README.md)).
+[host-demo.webm](https://github.com/user-attachments/assets/b65981c5-8291-4a85-804c-a89ee36bc71f)
+
+In under a minute: add a client in RadiusDeck, restart FreeRADIUS, and get
+`Access-Accept` from a test request. Then rotate the shared secret and roll it
+back from a backup.
+[Run the same demo on your machine](demo/README.md): it uses its own config
+files and loopback ports, so your system FreeRADIUS is not touched.
 
 ## Included capabilities
 
