@@ -248,6 +248,20 @@ See [architecture](docs/community/architecture.md),
 [backups](docs/community/backups.md), and the
 [extension interface](docs/extensions.md) for the main runtime contracts.
 
+## Help and feedback
+
+Use GitHub Issues for questions about installing or using RadiusDeck Community
+and for bug reports. A GitHub account is required to post; issues are public.
+
+- [Ask a question](https://github.com/radiusdeck/radiusdeck/issues/new?template=question.yml)
+- [Report a bug](https://github.com/radiusdeck/radiusdeck/issues/new?template=bug_report.yml)
+- [How to get help and what to include](SUPPORT.md)
+
+Search [existing issues](https://github.com/radiusdeck/radiusdeck/issues?q=is%3Aissue),
+including closed ones, first. Please use English when possible and remove
+passwords, shared secrets, tokens, and private configuration before posting.
+For security vulnerabilities, follow [SECURITY.md](SECURITY.md).
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow and pull
