@@ -1,0 +1,142 @@
+name: Publish Community image
+run-name: Publish Community image ${{ github.event.release.tag_name || inputs.tag }}
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag (for example, v0.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-community-image-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # This workflow publishes stable releases only, for Linux amd64.
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Validate release tag
+        id: release
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Expected a stable release tag such as v0.1.0."
+            exit 1
+          fi
+          version="${RELEASE_TAG#v}"
+          image="ghcr.io/${GITHUB_REPOSITORY,,}:$version"
+          {
+            printf 'tag=%s\n' "$RELEASE_TAG"
+            printf 'version=%s\n' "$version"
+            printf 'image=%s\n' "$image"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check out the release source
+        uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ steps.release.outputs.tag }}
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Verify package versions match the release tag
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          python - <<'PY'
+          import os
+          import runpy
+          import tomllib
+          from pathlib import Path
+
+          expected = os.environ["RELEASE_VERSION"]
+          project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+          package_version = project["project"]["version"]
+          runtime_version = runpy.run_path("src/radiusdeck/version.py")["__version__"]
+          if package_version != expected or runtime_version != expected:
+              raise SystemExit(
+                  f"Release version {expected} does not match "
+                  f"pyproject.toml ({package_version}) and version.py ({runtime_version})"
+              )
+          PY
+
+      - name: Install build and test dependencies
+        run: python -m pip install -r requirements.txt -r requirements-dev.txt -e .
+
+      - name: Check code quality
+        run: |
+          ruff check src tests scripts/artifact_checks.py
+          black --check src tests scripts/artifact_checks.py
+          mypy src tests scripts/artifact_checks.py
+          bandit -q -r src
+
+      - name: Run Community tests
+        env:
+          APP_ENV: test
+        run: pytest tests -q
+
+      - name: Build and test the release image
+        env:
+          COMMUNITY_IMAGE: ${{ steps.release.outputs.image }}
+        run: make test-community-image
+
+      - name: Verify image version
+        env:
+          COMMUNITY_IMAGE: ${{ steps.release.outputs.image }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          image_version="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.version"}}' "$COMMUNITY_IMAGE")"
+          if [[ "$image_version" != "$RELEASE_VERSION" ]]; then
+            echo "::error::The tested image version does not match the release tag."
+            exit 1
+          fi
+
+      - name: Log in to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+
+      - name: Push the tested image
+        env:
+          COMMUNITY_IMAGE: ${{ steps.release.outputs.image }}
+        run: docker push "$COMMUNITY_IMAGE"
+
+      - name: Write publication summary
+        env:
+          COMMUNITY_IMAGE: ${{ steps.release.outputs.image }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "$COMMUNITY_IMAGE")"
+          {
+            printf '## Published Community image\n\n'
+            printf -- '- Image: %s\n' "$COMMUNITY_IMAGE"
+            printf -- '- Digest: %s\n' "$digest"
+            printf -- '- Source: %s (%s)\n' "$RELEASE_TAG" "$(git rev-parse HEAD)"
+            printf -- '- Platform: linux/amd64\n\n'
+            printf '~~~bash\ndocker pull %s\n~~~\n\n' "$COMMUNITY_IMAGE"
+            printf 'For the first publication, set the GHCR package visibility to **Public** to allow anonymous pulls.\n'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Log out of GHCR
+        if: always()
+        run: docker logout ghcr.io
