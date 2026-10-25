@@ -13,7 +13,7 @@ requires-python = ">=3.12"
 dependencies = [
     "aiofiles",
     "argon2-cffi",
-    "fastapi==0.143.2",
+    "fastapi==0.161.1",
     "httpx",
     "itsdangerous>=2.2.0",
     "jinja2",
