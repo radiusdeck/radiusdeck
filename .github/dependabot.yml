@@ -7,7 +7,7 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "06:00"
-      timezone: "Asia/Novosibirsk"
+      timezone: "Asia/Bangkok"
     open-pull-requests-limit: 5
     commit-message:
       prefix: "build(deps)"
@@ -56,7 +56,7 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "06:30"
-      timezone: "Asia/Novosibirsk"
+      timezone: "Asia/Bangkok"
     open-pull-requests-limit: 3
     commit-message:
       prefix: "ci(deps)"
