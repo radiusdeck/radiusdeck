@@ -81,6 +81,12 @@ def main() -> None:
                 assert logs.status_code == 200 and "hidden words" not in logs.text
                 assert client.get("/ui/status").status_code == 200
                 assert client.get("/ui/backups").status_code == 200
+                for asset in (
+                    "bootstrap/bootstrap.min.css",
+                    "bootstrap/bootstrap.bundle.min.js",
+                    "htmx/htmx.min.js",
+                ):
+                    assert client.get(f"/static/vendor/{asset}").status_code == 200
                 assert client.get("/api/v1/clients/").status_code == 404
                 assert not any(
                     path.startswith("/api/v1") for path in app.openapi()["paths"]

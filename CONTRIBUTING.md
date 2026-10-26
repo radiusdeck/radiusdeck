@@ -70,6 +70,33 @@ make test-community-image
 Use `tmp_path` for file-based tests. Mock reload integrations for service and
 endpoint tests; tests must not read or modify a real FreeRADIUS configuration.
 
+## Browser libraries
+
+The web interface serves Bootstrap and htmx from
+`src/radiusdeck/static/vendor/`; pages must not load scripts or styles from
+external servers. Versions are pinned in `package.json` and
+`package-lock.json`, and the copied files are committed.
+
+To update a library, change its version in `package.json`, refresh the lock
+file, and copy the files:
+
+```bash
+npm install --package-lock-only --ignore-scripts
+make vendor-assets
+```
+
+`make vendor-assets` downloads the tarballs listed in the lock file, verifies
+their integrity hashes, and rewrites `static/vendor/` with its `manifest.json`.
+Node.js is needed only to refresh the lock file.
+
+Dependabot opens pull requests that change only `package.json` and
+`package-lock.json`, so the `Vendored browser libraries` CI check fails on
+them. Check out the pull request branch, run `make vendor-assets`, commit the
+updated files to that branch, and check the web interface before merging.
+Major versions are excluded from Dependabot updates and need a planned
+migration. Update [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) when a
+license or bundled component changes.
+
 ## Pull requests
 
 - Keep each pull request focused on one change.
