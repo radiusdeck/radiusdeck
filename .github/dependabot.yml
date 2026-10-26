@@ -7,7 +7,7 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "06:00"
-      timezone: "Asia/Novosibirsk"
+      timezone: "Asia/Bangkok"
     open-pull-requests-limit: 5
     commit-message:
       prefix: "build(deps)"
@@ -24,13 +24,39 @@ updates:
         patterns:
           - "*"
 
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:15"
+      timezone: "Asia/Bangkok"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "build(deps)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      browser-libraries:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      browser-libraries-security:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
       time: "06:30"
-      timezone: "Asia/Novosibirsk"
+      timezone: "Asia/Bangkok"
     open-pull-requests-limit: 3
     commit-message:
       prefix: "ci(deps)"

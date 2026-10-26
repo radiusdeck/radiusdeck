@@ -52,6 +52,10 @@ def inspect_community_wheel(wheel: Path) -> None:
             "radiusdeck/cli/main.py",
             "radiusdeck/templates/clients.html",
             "radiusdeck/extensions/api.py",
+            "radiusdeck/static/vendor/manifest.json",
+            "radiusdeck/static/vendor/bootstrap/bootstrap.min.css",
+            "radiusdeck/static/vendor/bootstrap/bootstrap.bundle.min.js",
+            "radiusdeck/static/vendor/htmx/htmx.min.js",
         }
         missing = required - set(names)
         violations.extend(f"missing required path: {name}" for name in sorted(missing))

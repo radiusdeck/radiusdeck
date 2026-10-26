@@ -3,10 +3,6 @@
 
     var timers = new Map();
 
-    function renderIcons() {
-        if (window.lucide) window.lucide.createIcons();
-    }
-
     function clearTimer(container) {
         var timer = timers.get(container);
         if (timer !== undefined) {
@@ -25,7 +21,6 @@
         var masked = template.content.firstElementChild.cloneNode(true);
         container.replaceWith(masked);
         if (window.htmx) window.htmx.process(masked);
-        renderIcons();
     }
 
     function initialize(container) {
@@ -73,7 +68,6 @@
 
     document.body.addEventListener("htmx:afterSwap", function () {
         initializeWithin(document);
-        renderIcons();
     });
 
     document.addEventListener("visibilitychange", function () {
@@ -82,5 +76,4 @@
     });
 
     initializeWithin(document);
-    renderIcons();
 }());

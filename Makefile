@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: build up down logs reload health test-compose test test-community-artifact test-community-image
+.PHONY: build up down logs reload health test-compose test test-community-artifact test-community-image vendor-assets check-vendor-assets
 
 IMAGE_TAG ?= radiusdeck:latest
 
@@ -43,6 +43,12 @@ lint: ## linting
 
 test: ## tests
 	pytest tests/ -v
+
+vendor-assets: ## Copy Bootstrap and htmx from package-lock.json into static/vendor
+	python scripts/vendor_assets.py
+
+check-vendor-assets: ## Verify static/vendor matches package-lock.json
+	python scripts/vendor_assets.py --check
 
 test-community-artifact: ## Build, inspect, install, and smoke-test Community wheel
 	./scripts/test-community-artifact.sh

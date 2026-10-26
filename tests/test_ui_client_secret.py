@@ -25,8 +25,8 @@ def test_initial_client_list_and_details_do_not_contain_secret(
     assert MASK in details.text
     assert "Show shared secret" in page.text
     assert "Show shared secret" in details.text
-    assert 'data-lucide="eye"' in page.text
-    assert 'data-lucide="eye"' in details.text
+    assert 'class="lucide lucide-eye"' in page.text
+    assert 'class="lucide lucide-eye"' in details.text
     assert "data-secret" not in page.text
     assert "data-secret" not in details.text
 

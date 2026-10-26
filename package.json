@@ -1,0 +1,10 @@
+{
+  "name": "radiusdeck-ui-assets",
+  "private": true,
+  "description": "Browser libraries bundled with the RadiusDeck web interface. Copied to src/radiusdeck/static/vendor/ by scripts/vendor_assets.py.",
+  "license": "MIT",
+  "dependencies": {
+    "bootstrap": "5.3.8",
+    "htmx.org": "1.9.12"
+  }
+}

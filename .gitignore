@@ -17,3 +17,4 @@ docs/*
 !docs/community/
 !docs/community/*.md
 !docs/extensions.md
+node_modules/
