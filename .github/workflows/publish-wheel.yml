@@ -1,37 +1,73 @@
-name: Publish Community 0.1.0 wheel
+name: Publish Community wheel
+run-name: Publish Community wheel ${{ github.event.release.tag_name || inputs.tag }}
 
 on:
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag (for example, v0.1.1)"
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: publish-community-wheel-v0.1.0
+  group: publish-community-wheel-${{ github.event.release.tag_name || inputs.tag }}
   cancel-in-progress: false
 
 jobs:
   build-and-verify:
+    # Stable releases only, like the image workflow.
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
     steps:
+      - name: Validate release tag
+        id: release
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Expected a stable release tag such as v0.1.1."
+            exit 1
+          fi
+          {
+            printf 'tag=%s\n' "$RELEASE_TAG"
+            printf 'version=%s\n' "${RELEASE_TAG#v}"
+          } >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: refs/tags/v0.1.0
+          ref: refs/tags/${{ steps.release.outputs.tag }}
           persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
           cache: pip
-      - name: Verify the existing release source
+      - name: Verify package versions match the release tag
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
         run: |
-          test "$(git rev-parse HEAD)" = 0710de81e92969e9ce1c0ffa2af58c9b789626d2
           python - <<'PY'
-          import pathlib
+          import os
+          import runpy
           import tomllib
-          project = tomllib.loads(pathlib.Path("pyproject.toml").read_text())
+          from pathlib import Path
+
+          expected = os.environ["RELEASE_VERSION"]
+          project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
           assert project["project"]["name"] == "radiusdeck"
-          assert project["project"]["version"] == "0.1.0"
+          package_version = project["project"]["version"]
+          runtime_version = runpy.run_path("src/radiusdeck/version.py")["__version__"]
+          if package_version != expected or runtime_version != expected:
+              raise SystemExit(
+                  f"Release version {expected} does not match "
+                  f"pyproject.toml ({package_version}) and version.py ({runtime_version})"
+              )
           PY
       - name: Install validation tools
         run: python -m pip install -r requirements.txt -r requirements-dev.txt -e .
@@ -41,7 +77,7 @@ jobs:
         run: |
           make lint
           make test
-      - name: Build and verify the wheel from the existing tag
+      - name: Build and verify the wheel from the release tag
         run: make test-community-artifact
       - name: Record asset checksums
         run: |
@@ -49,35 +85,61 @@ jobs:
           sha256sum radiusdeck-*.whl community-installed-manifest.json > SHA256SUMS
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: community-v0.1.0-wheel
+          name: community-${{ steps.release.outputs.tag }}-wheel
           path: dist/community/
           if-no-files-found: error
           retention-days: 7
 
-  attach-to-existing-release:
+  attest-and-attach:
+    # Signing and release write permissions stay out of the job that installs
+    # dependencies and runs the test suite.
     needs: build-and-verify
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: community-v0.1.0-wheel
+          name: community-${{ needs.build-and-verify.outputs.tag }}-wheel
           path: dist/community/
-      - name: Attach missing assets without replacing existing files
+      - name: Check the release and its existing assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.build-and-verify.outputs.tag }}
         run: |
           cd dist/community
           sha256sum --check SHA256SUMS
-          gh release view v0.1.0
+          # Attest only files that will be published: a rebuilt wheel for a
+          # release that already has assets is refused before signing.
+          existing="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          for name in radiusdeck-*.whl community-installed-manifest.json SHA256SUMS; do
+            if grep -Fxq "$name" <<<"$existing"; then
+              echo "::error::$RELEASE_TAG already has $name; existing assets are never replaced."
+              exit 1
+            fi
+          done
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            dist/community/radiusdeck-*.whl
+            dist/community/community-installed-manifest.json
+      - name: Attach the assets to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.build-and-verify.outputs.tag }}
+        run: |
+          cd dist/community
           # No --clobber: an existing asset must never be silently replaced.
-          gh release upload v0.1.0 radiusdeck-*.whl \
+          gh release upload "$RELEASE_TAG" radiusdeck-*.whl \
             community-installed-manifest.json SHA256SUMS
           {
-            printf '### Community v0.1.0 wheel assets\n\n'
+            printf '### Community %s wheel assets\n\n' "$RELEASE_TAG"
             printf '~~~text\n'
             cat SHA256SUMS
             printf '~~~\n'
