@@ -116,7 +116,7 @@ FreeRADIUS writes to the log.
 ## Install with Docker
 
 The published Community image is
-`ghcr.io/radiusdeck/radiusdeck:0.1.0` (Linux amd64). The following commands
+`ghcr.io/radiusdeck/radiusdeck:0.1.1` (Linux amd64). The following commands
 start a local instance with an isolated test configuration on a Linux host.
 
 Create a directory for configuration and persistent backups, then download
@@ -125,7 +125,7 @@ the image:
 ```bash
 mkdir -p radiusdeck-data/backups
 touch radiusdeck-data/clients.conf
-docker pull ghcr.io/radiusdeck/radiusdeck:0.1.0
+docker pull ghcr.io/radiusdeck/radiusdeck:0.1.1
 ```
 
 From the same directory, start RadiusDeck:
@@ -142,7 +142,7 @@ docker run -d \
   -e APP_BACKUP_ENABLED=true \
   -e APP_AUTH_METHOD=none \
   -e APP_SIDECAR_RELOAD_ENABLED=false \
-  ghcr.io/radiusdeck/radiusdeck:0.1.0
+  ghcr.io/radiusdeck/radiusdeck:0.1.1
 ```
 
 Open **<http://127.0.0.1:8000/ui/clients>**. The example runs as your current
@@ -175,9 +175,35 @@ saved changes through your FreeRADIUS restart procedure, or configure the
 optional reload sidecar. The [host demo](demo/README.md) shows real
 authentication checks against an isolated FreeRADIUS process.
 
-The downloaded `0.1.0` image was checked with both the default user and a host
+The downloaded `0.1.1` image was checked with both the default user and a host
 UID/GID: startup, client creation and editing in the browser, exact backup
 restore, data persistence after restart, and Docker healthchecks passed.
+
+## Verify a release
+
+Each [release](https://github.com/radiusdeck/radiusdeck/releases) lists the
+image digest. Pull by digest to get exactly the published image:
+
+```bash
+docker pull ghcr.io/radiusdeck/radiusdeck@sha256:<digest from the release notes>
+```
+
+The wheel is published with `SHA256SUMS`. In the directory with the downloaded
+release files, run:
+
+```bash
+sha256sum -c SHA256SUMS
+```
+
+The image and the wheel also have build provenance attestations, which show
+that GitHub Actions built them from this repository. Verify them with the
+[GitHub CLI](https://cli.github.com/); it requires `gh auth login` with any
+GitHub account:
+
+```bash
+gh attestation verify oci://ghcr.io/radiusdeck/radiusdeck@sha256:<digest> --repo radiusdeck/radiusdeck
+gh attestation verify radiusdeck-<version>-py3-none-any.whl --repo radiusdeck/radiusdeck
+```
 
 ## Local installation
 
@@ -242,9 +268,7 @@ to any other third party.
 - **Browser.** The web interface loads Bootstrap and htmx from the application
   itself and makes no requests to other hosts, so it works on management
   networks without internet access. Licenses are listed in
-  [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). This applies to `main` and
-  to releases after 0.1.0: the 0.1.0 image loads Bootstrap, htmx, and Lucide
-  from the jsDelivr and unpkg CDNs.
+  [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
 - **Application.** Outbound connections go only to the reload sidecar, and only
   when `APP_SIDECAR_RELOAD_ENABLED=true`: a `POST` without a request body to
   `APP_SIDECAR_RELOAD_URL` after each saved change and, when
