@@ -233,6 +233,31 @@ Local authentication requires both `APP_LOCAL_USERS_PATH` and
 `APP_SESSION_SECRET_KEY`. Secure cookies are selected from `APP_PUBLIC_URL` and
 can be overridden with `APP_SECURE_COOKIES`.
 
+## Privacy and network access
+
+RadiusDeck has no telemetry, analytics, or update checks. It does not send
+your configuration, shared secrets, or usage data to the RadiusDeck project or
+to any other third party.
+
+- **Browser.** The web interface loads Bootstrap and htmx from the application
+  itself and makes no requests to other hosts, so it works on management
+  networks without internet access. Licenses are listed in
+  [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). This applies to `main` and
+  to releases after 0.1.0: the 0.1.0 image loads Bootstrap, htmx, and Lucide
+  from the jsDelivr and unpkg CDNs.
+- **Application.** Outbound connections go only to the reload sidecar, and only
+  when `APP_SIDECAR_RELOAD_ENABLED=true`: a `POST` without a request body to
+  `APP_SIDECAR_RELOAD_URL` after each saved change and, when
+  `APP_SIDECAR_HEALTH_URL` is set, a `GET` to that URL each time the **Status**
+  page is opened. Both carry `APP_SIDECAR_RELOAD_TOKEN` as a bearer token when
+  it is set. With the sidecar disabled, the application opens no outbound
+  connections.
+- **Container.** The Docker healthcheck requests
+  `http://127.0.0.1:8000/health` inside the container.
+
+Extensions installed as separate Python packages run in the same process and
+are not covered by this section.
+
 ## Development checks
 
 ```bash
