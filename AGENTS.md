@@ -11,7 +11,7 @@ It can optionally integrate with a sidecar container to automatically reload the
 - **Backend:** Python 3.12+, FastAPI, Uvicorn.
 - **HTTP Client:** httpx for calling external services (like the reload sidecar).
 - **Frontend:** Server-side rendered Jinja2 templates + HTMX for interactivity (no SPA frameworks)
-- **Styling:** Bootstrap 5 (currently via CDN)
+- **Styling:** Bootstrap 5. Bootstrap and HTMX are vendored in `src/radiusdeck/static/vendor/` from `package-lock.json` (`make vendor-assets`, see CONTRIBUTING.md); templates must not load scripts or styles from CDNs.
 - **Database/Storage:** The application parses and writes directly to FreeRADIUS text config files (`clients.conf`). No SQL database is used for core logic.
 - **Parsing:** Custom AST-based parser for FreeRADIUS config format (located in `src/radiusdeck/lib/fr_parser`).
 - **Deployment:** Docker, with an optional docker-reload-sidecar container.
