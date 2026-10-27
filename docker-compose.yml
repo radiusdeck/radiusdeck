@@ -14,13 +14,18 @@ services:
     ports:
       - "8000:8000"
     volumes:
+      # The container runs as UID 10001, which must be able to write this file.
+      # Do not make it world-writable: FreeRADIUS refuses to start with a
+      # globally writable clients.conf.
       - type: bind
         source: ${HOST_RADIUS_CLIENTS_CONF:?HOST_RADIUS_CLIENTS_CONF is required}
         target: /data/clients.conf
         bind:
           create_host_path: false
       - radiusdeck-backups:/backups
-      # Optional read-only FreeRADIUS log mount for the log viewer:
+      # Optional read-only FreeRADIUS log mount for the log viewer.
+      # FreeRADIUS creates radius.log as 0640 freerad:freerad, so also add the
+      # freerad group ID with group_add (101 in the official image).
       # - /var/log/freeradius/radius.log:/var/log/freeradius/radius.log:ro
     environment:
       APP_RADIUS_CLIENTS_PATH: /data/clients.conf
@@ -59,16 +64,18 @@ services:
   # ── FreeRADIUS (EXAMPLE — substitute your own) ────────────────
   # Uncomment if you want to run everything together for testing.
   # In production, FreeRADIUS is an external service.
+  # The official image reads /etc/freeradius/clients.conf; Debian and Ubuntu
+  # packages use /etc/freeradius/3.0/clients.conf instead.
   #
   # freeradius:
-  #   image: freeradius/freeradius-server:3.2.3
+  #   image: freeradius/freeradius-server:3.2.10
   #   container_name: freeradius
   #   restart: unless-stopped
   #   ports:
   #     - "1812:1812/udp"    # auth
   #     - "1813:1813/udp"    # accounting
   #   volumes:
-  #     - ${HOST_RADIUS_CLIENTS_CONF}:/etc/freeradius/3.0/clients.conf
+  #     - ${HOST_RADIUS_CLIENTS_CONF}:/etc/freeradius/clients.conf
   #   command: freeradius -f          # foreground
   #   networks:
   #     - radiusdeck
