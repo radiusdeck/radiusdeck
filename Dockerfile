@@ -1,6 +1,6 @@
 FROM python:3.12-slim
 
-ARG COMMUNITY_VERSION=0.1.0
+ARG COMMUNITY_VERSION=0.1.1
 ARG COMMUNITY_WHEEL_SHA256=unknown
 
 LABEL org.opencontainers.image.title="RadiusDeck" \

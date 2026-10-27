@@ -10,7 +10,7 @@ def test_version_contract(capsys: pytest.CaptureFixture[str]) -> None:
         main(["--version"])
 
     assert raised.value.code == 0
-    assert capsys.readouterr().out == "radiusdeck 0.1.0\n"
+    assert capsys.readouterr().out == "radiusdeck 0.1.1\n"
 
 
 def test_serve_defaults_match_production_uvicorn(
