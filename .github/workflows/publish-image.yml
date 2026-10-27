@@ -27,6 +27,11 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      image: ${{ steps.release.outputs.image }}
+      repository: ${{ steps.release.outputs.repository }}
+      digest: ${{ steps.pushed.outputs.digest }}
     defaults:
       run:
         shell: bash
@@ -41,10 +46,12 @@ jobs:
             exit 1
           fi
           version="${RELEASE_TAG#v}"
-          image="ghcr.io/${GITHUB_REPOSITORY,,}:$version"
+          repository="ghcr.io/${GITHUB_REPOSITORY,,}"
+          image="$repository:$version"
           {
             printf 'tag=%s\n' "$RELEASE_TAG"
             printf 'version=%s\n' "$version"
+            printf 'repository=%s\n' "$repository"
             printf 'image=%s\n' "$image"
           } >> "$GITHUB_OUTPUT"
 
@@ -121,12 +128,28 @@ jobs:
           COMMUNITY_IMAGE: ${{ steps.release.outputs.image }}
         run: docker push "$COMMUNITY_IMAGE"
 
+      - name: Record the pushed digest
+        id: pushed
+        env:
+          COMMUNITY_IMAGE: ${{ steps.release.outputs.image }}
+          COMMUNITY_REPOSITORY: ${{ steps.release.outputs.repository }}
+        run: |
+          reference="$(docker image inspect --format '{{index .RepoDigests 0}}' "$COMMUNITY_IMAGE")"
+          digest="${reference#"$COMMUNITY_REPOSITORY@"}"
+          if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::Unexpected repository digest: $reference"
+            exit 1
+          fi
+          printf 'digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+
       - name: Write publication summary
         env:
           COMMUNITY_IMAGE: ${{ steps.release.outputs.image }}
+          COMMUNITY_REPOSITORY: ${{ steps.release.outputs.repository }}
+          IMAGE_DIGEST: ${{ steps.pushed.outputs.digest }}
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
         run: |
-          digest="$(docker image inspect --format '{{index .RepoDigests 0}}' "$COMMUNITY_IMAGE")"
+          digest="$COMMUNITY_REPOSITORY@$IMAGE_DIGEST"
           {
             printf '## Published Community image\n\n'
             printf -- '- Image: %s\n' "$COMMUNITY_IMAGE"
@@ -136,6 +159,67 @@ jobs:
             printf '~~~bash\ndocker pull %s\n~~~\n\n' "$COMMUNITY_IMAGE"
             printf 'For the first publication, set the GHCR package visibility to **Public** to allow anonymous pulls.\n'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Log out of GHCR
+        if: always()
+        run: docker logout ghcr.io
+
+  attest-and-announce:
+    # Signing and release-note permissions stay out of the job that installs
+    # dependencies and runs the test suite.
+    needs: publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Log in to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s' "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ${{ needs.publish.outputs.repository }}
+          subject-digest: ${{ needs.publish.outputs.digest }}
+          push-to-registry: true
+
+      - name: Add the image digest to the release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.publish.outputs.tag }}
+          COMMUNITY_IMAGE: ${{ needs.publish.outputs.image }}
+          COMMUNITY_REPOSITORY: ${{ needs.publish.outputs.repository }}
+          IMAGE_DIGEST: ${{ needs.publish.outputs.digest }}
+        run: |
+          marker='<!-- community-image -->'
+          body="$(gh release view "$RELEASE_TAG" --json body --jq .body)"
+          # A rerun replaces the section written by the previous run.
+          body="${body%%"$marker"*}"
+          body="${body%"${body##*[![:space:]]}"}"
+          pinned="$COMMUNITY_REPOSITORY@$IMAGE_DIGEST"
+          {
+            if [[ -n "$body" ]]; then
+              printf '%s\n\n' "$body"
+            fi
+            printf '%s\n' "$marker"
+            printf '## Container image\n\n'
+            # shellcheck disable=SC2016 # backticks are Markdown, not command substitution
+            printf '`%s` (linux/amd64) has the digest `%s`. Pull it by digest:\n\n' "$COMMUNITY_IMAGE" "$IMAGE_DIGEST"
+            printf '~~~bash\ndocker pull %s\n~~~\n\n' "$pinned"
+            printf 'Verify that GitHub Actions built it from this repository:\n\n'
+            printf '~~~bash\ngh attestation verify oci://%s --repo %s\n~~~\n' "$pinned" "$GITHUB_REPOSITORY"
+          } > release-notes.md
+          gh release edit "$RELEASE_TAG" --notes-file release-notes.md
 
       - name: Log out of GHCR
         if: always()
