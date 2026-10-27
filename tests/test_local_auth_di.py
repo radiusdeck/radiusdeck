@@ -112,4 +112,4 @@ async def test_lifespan_creates_status_service(
         for check in section.checks
         if check.id == "app.version"
     )
-    assert version_check.message == "RadiusDeck version: 0.1.0"
+    assert version_check.message == "RadiusDeck version: 0.1.1"

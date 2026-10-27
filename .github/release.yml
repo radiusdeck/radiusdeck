@@ -1,0 +1,19 @@
+# Categories for GitHub's generated release notes. CHANGELOG.md is the
+# curated record; generated notes list the pull requests behind it.
+changelog:
+  categories:
+    - title: Security and fixes
+      labels:
+        - bug
+    - title: Features
+      labels:
+        - enhancement
+    - title: Documentation
+      labels:
+        - documentation
+    - title: Dependencies
+      labels:
+        - dependencies
+    - title: Other changes
+      labels:
+        - "*"
