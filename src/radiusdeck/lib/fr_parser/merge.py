@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from radiusdeck.lib.fr_parser.ast import Assignment, BlankLine, Block, CommentLine, Node
+from radiusdeck.lib.fr_parser.ops import ROOT_FIELD_KEYS, client_address_key
 from radiusdeck.lib.fr_parser.utils import needs_quotes
 from radiusdeck.schemas.client_edit_payload import (
     AssignmentEditPayload,
@@ -8,7 +9,7 @@ from radiusdeck.schemas.client_edit_payload import (
     ClientEditTreePayload,
 )
 
-_RESERVED_ROOT_KEYS = frozenset({"ipaddr", "secret"})
+_RESERVED_ROOT_KEYS = ROOT_FIELD_KEYS
 
 
 # ── value / quoting helpers ──────────────────────────────
@@ -340,10 +341,11 @@ def merge_client_block(
 
     Root rules
     ----------
-    * ``ipaddr`` and ``secret`` are updated via dedicated payload fields
-      and can never be deleted.
-    * ``payload.assignments`` are *extra* only; using ``ipaddr``/``secret``
-      as key there raises ``ValueError``.
+    * The address and ``secret`` are updated via dedicated payload fields
+      and can never be deleted. ``payload.ipaddr`` goes to the key the client
+      already uses (``ipaddr``, ``ipv4addr`` or ``ipv6addr``).
+    * ``payload.assignments`` are *extra* only; using an address key or
+      ``secret`` as key there raises ``ValueError``.
     """
     if existing.kind != "client":
         raise ValueError("existing block must be kind='client'")
@@ -351,11 +353,11 @@ def merge_client_block(
         raise ValueError("payload.name must match existing client name")
 
     # 1. Update required fields
-    _update_required(existing, "ipaddr", payload.ipaddr)
+    _update_required(existing, client_address_key(existing), payload.ipaddr)
     if payload.secret is not None:
         _update_required(existing, "secret", payload.secret)
 
-    # 2. Merge extra assignments (skip ipaddr/secret in id-mapping)
+    # 2. Merge extra assignments (skip address keys/secret in id-mapping)
     existing.children = _merge_assignments(
         existing.children,
         payload.assignments,

@@ -18,6 +18,9 @@
         <label class="form-label">IP Address</label>
         <input type="text" name="ip_addr" class="form-control" placeholder="192.168.1.50"
             value="{{ client.ipaddr if client is defined and client else '' }}" required>
+        {% if mode == "edit" and client is defined and client and client.address_key and client.address_key != "ipaddr" %}
+        <div class="form-text">Saved as <code>{{ client.address_key }}</code>: IPv{{ "6" if client.address_key == "ipv6addr" else "4" }} only.</div>
+        {% endif %}
     </div>
 
     <div class="mb-3">

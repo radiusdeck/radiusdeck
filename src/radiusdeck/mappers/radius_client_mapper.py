@@ -1,6 +1,7 @@
 from typing import Any
 
 from radiusdeck.lib.fr_parser.ast import Assignment, Block, CommentLine
+from radiusdeck.lib.fr_parser.ops import ADDRESS_KEYS
 
 ClientFull = dict[str, Any]
 ClientDict = dict[str, str]
@@ -12,11 +13,16 @@ def block_to_flat(block: Block) -> ClientDict:
     return data
 
 
+def flat_client_address(data: ClientDict) -> str:
+    """Address of a flat client: ipaddr, else ipv4addr, else ipv6addr."""
+    return next((data[key] for key in ADDRESS_KEYS if data.get(key)), "")
+
+
 def block_to_ui_summary(block: Block) -> ClientDict:
     data = block_to_flat(block)
     return {
         "name": data.get("name", ""),
-        "ipaddr": data.get("ipaddr", ""),
+        "ipaddr": flat_client_address(data),
     }
 
 

@@ -11,6 +11,7 @@ from pydantic import ValidationError
 from radiusdeck.auth.authorization import require_admin_user
 from radiusdeck.auth.models import CurrentUser
 from radiusdeck.core.config import settings
+from radiusdeck.mappers.radius_client_mapper import flat_client_address
 from radiusdeck.schemas.client_edit_payload import ClientEditTreePayload
 from radiusdeck.schemas.client_payload_tree import ClientCreateTreePayload
 from radiusdeck.services.backup_models import BackupEntry
@@ -62,7 +63,7 @@ def _client_row_context(request: Request, client: dict[str, str]) -> dict[str, s
     name = client["name"]
     return {
         "name": name,
-        "ipaddr": client.get("ipaddr", ""),
+        "ipaddr": flat_client_address(client),
         "secret_dom_id": _client_secret_dom_id(name, "list"),
         "secret_reveal_url": str(request.url_for("reveal_client_secret", name=name)),
         SURFACE_CONTEXT_KEY: "list",

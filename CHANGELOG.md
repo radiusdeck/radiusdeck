@@ -27,6 +27,11 @@ Notable changes to RadiusDeck Community. The format follows
   it is left unchanged.
 - Errors from **Save Changes** in the Edit form are shown in the form. The
   server returned them with status 400, which htmx did not display.
+- Clients whose address is in `ipv4addr` or `ipv6addr`, such as the stock
+  `localhost_ipv6`, show their address in the list, and **Edit** opens for
+  them instead of failing with an error 500. Saving changes that key in
+  place, and an `ipv6addr` client accepts only an IPv6 address (`ipv4addr`
+  only IPv4). These keys cannot be added as extra parameters.
 
 ## [0.1.1] - 2026-10-27
 

@@ -42,14 +42,23 @@ class ClientAddress:
     warning: str | None
 
 
-def parse_client_address(value: str) -> ClientAddress:
-    """Check a new `ipaddr` value; raise InvalidClientAddressError if unsafe."""
+def parse_client_address(value: str, key: str = "ipaddr") -> ClientAddress:
+    """Check a new address for `key` (ipaddr, ipv4addr or ipv6addr).
+
+    Raise InvalidClientAddressError if FreeRADIUS would reject or misread it.
+    """
     value = value.strip()
     if not value:
         raise InvalidClientAddressError("IP address is required.")
 
     if value in _ANY or ":" in value or _IPV4_CHARS.fullmatch(value):
         network = _parse_ip(value)
+        required = {"ipv4addr": 4, "ipv6addr": 6}.get(key)
+        if required is not None and network.version != required:
+            raise InvalidClientAddressError(
+                f'IP address "{value}" is IPv{network.version}, but this client '
+                f"uses {key}: enter an IPv{required} address."
+            )
         warning = None
         if network.prefixlen == 0:
             warning = (
