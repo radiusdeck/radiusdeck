@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 from fastapi import Request
 from fastapi.testclient import TestClient
@@ -11,7 +12,7 @@ from radiusdeck.main import app
 from radiusdeck.repositories.clients_conf_store import ClientsConfStore
 from radiusdeck.services.radius_service import RadiusService
 from radiusdeck.web.deps import get_radius_service
-from tests.conftest import make_payload
+from tests.conftest import UiEnv, make_payload
 
 
 class TestAddTree:
@@ -114,6 +115,24 @@ class TestAddTree:
         payload = make_payload(assignments=[{"key": "ipaddr", "value": "hack"}])
         resp = client.post("/ui/clients/add-tree", data={"payload_json": payload})
         assert "clientAddError" in resp.headers.get("hx-trigger", "")
+
+    def test_add_existing_name_is_rejected_without_changing_file(
+        self, env_complex: UiEnv, reloader_mock: AsyncMock
+    ) -> None:
+        before = env_complex.config_path.read_text(encoding="utf-8")
+        payload = make_payload(name="LOCAL", ipaddr="198.51.100.31", secret="new")
+
+        resp = env_complex.client.post(
+            "/ui/clients/add-tree", data={"payload_json": payload}
+        )
+
+        trigger = json.loads(resp.headers["hx-trigger"])
+        assert "clientAdded" not in trigger
+        assert trigger["clientAddError"] == (
+            "Client LOCAL already exists. Use Edit to change it."
+        )
+        assert env_complex.config_path.read_text(encoding="utf-8") == before
+        reloader_mock.reload.assert_not_awaited()
 
     def test_add_triggers_clientAdded_event(self, empty_client: TestClient) -> None:
         payload = make_payload(name="trigger-test")

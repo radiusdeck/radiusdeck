@@ -34,6 +34,7 @@ from radiusdeck.schemas.client_edit_payload import ClientEditTreePayload
 from radiusdeck.schemas.client_payload_tree import ClientCreateTreePayload
 from radiusdeck.services.backup_models import BackupEntry
 from radiusdeck.services.errors import (
+    ClientAlreadyExistsError,
     ClientNotFoundError,
     DuplicateKeyError,
     InvalidClientUpsertError,
@@ -251,29 +252,29 @@ class RadiusService:
                 backup=persisted.backup,
             )
 
-    async def create_or_update_client_tree(
+    async def create_client_tree(
         self,
         payload: ClientCreateTreePayload,
         *,
         actor_username: str | None = None,
     ) -> UpsertResult:
+        """Add a new client. An existing client is never replaced; use update."""
         client_block = client_block_from_payload(payload)
 
         async with self._store.locked():
             snapshot = await self._store.load_snapshot()
             nodes = snapshot.nodes
+            if find_client(nodes, payload.name) is not None:
+                raise ClientAlreadyExistsError(payload.name)
             original_nodes = deepcopy(nodes)
-            action = (
-                "update" if find_client(nodes, payload.name) is not None else "create"
-            )
             updated_block = upsert_client_block(nodes, client_block)
             persisted = await self._persist_mutation(
                 snapshot=snapshot,
                 original_nodes=original_nodes,
                 proposed_nodes=nodes,
                 actor_username=actor_username,
-                reason=f"{action}_client",
-                action=action,
+                reason="create_client",
+                action="create",
                 client_name=payload.name,
             )
             return UpsertResult(
