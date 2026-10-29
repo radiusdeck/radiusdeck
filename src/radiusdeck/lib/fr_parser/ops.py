@@ -5,6 +5,11 @@ from typing import Iterable, List, Optional, Union
 from .ast import Assignment, AstNodes, BlankLine, Block, Node
 from .utils import needs_quotes
 
+# FreeRADIUS reads the client address from one of these keys.
+ADDRESS_KEYS = ("ipaddr", "ipv4addr", "ipv6addr")
+# Root keys edited through the dedicated form fields, never as extra parameters.
+ROOT_FIELD_KEYS = frozenset({"secret", *ADDRESS_KEYS})
+
 
 def iter_blocks(nodes: List[Node], kind: str) -> Iterable[Block]:
     for n in nodes:
@@ -24,6 +29,14 @@ def get_assignment(block: Block, key: str) -> Optional[Assignment]:
         if isinstance(ch, Assignment) and ch.key == key:
             return ch
     return None
+
+
+def client_address_key(block: Block) -> str:
+    """Key that holds the client address: the first one present, else ipaddr."""
+    for key in ADDRESS_KEYS:
+        if get_assignment(block, key) is not None:
+            return key
+    return "ipaddr"
 
 
 def set_assignment(

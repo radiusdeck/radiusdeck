@@ -13,6 +13,8 @@ from radiusdeck.lib.fr_parser import (
 from radiusdeck.lib.fr_parser.ast import AstNodes, Block
 from radiusdeck.lib.fr_parser.merge import merge_client_block
 from radiusdeck.lib.fr_parser.ops import (
+    ADDRESS_KEYS,
+    client_address_key,
     find_client,
     get_assignment,
     upsert_client_block,
@@ -291,7 +293,7 @@ class RadiusService:
 
     @staticmethod
     def _check_client_address(
-        nodes: AstNodes, value: str, client_name: str
+        nodes: AstNodes, value: str, client_name: str, *, key: str = "ipaddr"
     ) -> tuple[str, ...]:
         """Validate a new ipaddr; reject an address another client already has.
 
@@ -299,13 +301,13 @@ class RadiusService:
         ("Failed to add duplicate client"); overlapping networks are allowed.
         Host names are compared only after FreeRADIUS resolves them, so not here.
         """
-        address = parse_client_address(value)
+        address = parse_client_address(value, key)
         if address.network is not None:
             for other in iter_blocks(nodes, "client"):
                 if other.name == client_name:
                     continue
-                for key in ("ipaddr", "ipv4addr", "ipv6addr"):
-                    assignment = get_assignment(other, key)
+                for other_key in ADDRESS_KEYS:
+                    assignment = get_assignment(other, other_key)
                     if (
                         assignment is not None
                         and address_network(assignment.value) == address.network
@@ -380,10 +382,13 @@ class RadiusService:
                 raise ClientNotFoundError(name)
 
             # A value already in the file may be hand-written; check only a change.
-            current = get_assignment(block, "ipaddr")
+            address_key = client_address_key(block)
+            current = get_assignment(block, address_key)
             warnings: tuple[str, ...] = ()
             if current is None or current.value != payload.ipaddr:
-                warnings = self._check_client_address(nodes, payload.ipaddr, name)
+                warnings = self._check_client_address(
+                    nodes, payload.ipaddr, name, key=address_key
+                )
 
             try:
                 merge_client_block(block, payload)

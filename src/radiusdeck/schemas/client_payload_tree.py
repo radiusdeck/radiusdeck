@@ -60,7 +60,7 @@ class ClientCreateTreePayload(BaseModel):
 
     @model_validator(mode="after")
     def validate_root_assignments(self) -> "ClientCreateTreePayload":
-        reserved = {"name", "ipaddr", "secret"}
+        reserved = {"name", "ipaddr", "ipv4addr", "ipv6addr", "secret"}
         seen: set[str] = set()
 
         for a in self.assignments:
