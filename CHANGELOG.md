@@ -11,6 +11,9 @@ Notable changes to RadiusDeck Community. The format follows
 - **+ Add field** and **+ Add block** in the New Client and Edit forms, and
   the buttons of a nested block, now add a row. In 0.1.0 and 0.1.1 they
   inherited the form's `hx-select`, so nothing was inserted.
+- **Add Client** with the name of an existing client no longer replaces that
+  client. The file is left unchanged and the form reports that the client
+  already exists; use **Edit** to change it.
 
 ## [0.1.1] - 2026-10-27
 

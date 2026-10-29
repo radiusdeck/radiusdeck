@@ -11,6 +11,12 @@ class ClientNotFoundError(RadiusDomainError):
         self.name = name
 
 
+class ClientAlreadyExistsError(RadiusDomainError):
+    def __init__(self, name: str):
+        super().__init__(f"Client already exists: {name}")
+        self.name = name
+
+
 class InvalidClientUpsertError(RadiusDomainError):
     """Raised when an upsert would create an invalid client block."""
 

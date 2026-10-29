@@ -15,6 +15,7 @@ from radiusdeck.schemas.client_edit_payload import ClientEditTreePayload
 from radiusdeck.schemas.client_payload_tree import ClientCreateTreePayload
 from radiusdeck.services.backup_models import BackupEntry
 from radiusdeck.services.errors import (
+    ClientAlreadyExistsError,
     ClientNotFoundError,
     DuplicateKeyError,
     InvalidNodeIdError,
@@ -179,9 +180,23 @@ async def add_client_tree(
 
     try:
         payload = ClientCreateTreePayload.model_validate_json(payload_json)
-        result: UpsertResult = await service.create_or_update_client_tree(
+        result: UpsertResult = await service.create_client_tree(
             payload,
             actor_username=admin.username,
+        )
+    except ClientAlreadyExistsError as e:
+        return Response(
+            content="",
+            media_type="text/html",
+            headers={
+                "HX-Trigger": json.dumps(
+                    {
+                        "clientAddError": (
+                            f"Client {e.name} already exists. Use Edit to change it."
+                        )
+                    }
+                )
+            },
         )
     except Exception as e:
         logger.error("Error adding client: %s", type(e).__name__)
