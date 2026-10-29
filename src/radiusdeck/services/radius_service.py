@@ -33,9 +33,11 @@ from radiusdeck.schemas.client import ClientCreate, ClientUpdate
 from radiusdeck.schemas.client_edit_payload import ClientEditTreePayload
 from radiusdeck.schemas.client_payload_tree import ClientCreateTreePayload
 from radiusdeck.services.backup_models import BackupEntry
+from radiusdeck.services.client_address import address_network, parse_client_address
 from radiusdeck.services.errors import (
     ClientAlreadyExistsError,
     ClientNotFoundError,
+    DuplicateClientAddressError,
     DuplicateKeyError,
     InvalidClientUpsertError,
     InvalidNodeIdError,
@@ -57,6 +59,7 @@ class UpsertResult:
     reload_result: ReloadResult
     changed: bool
     backup: BackupEntry | None
+    warnings: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -266,6 +269,7 @@ class RadiusService:
             nodes = snapshot.nodes
             if find_client(nodes, payload.name) is not None:
                 raise ClientAlreadyExistsError(payload.name)
+            warnings = self._check_client_address(nodes, payload.ipaddr, payload.name)
             original_nodes = deepcopy(nodes)
             updated_block = upsert_client_block(nodes, client_block)
             persisted = await self._persist_mutation(
@@ -282,7 +286,34 @@ class RadiusService:
                 reload_result=persisted.reload_result,
                 changed=persisted.changed,
                 backup=persisted.backup,
+                warnings=warnings,
             )
+
+    @staticmethod
+    def _check_client_address(
+        nodes: AstNodes, value: str, client_name: str
+    ) -> tuple[str, ...]:
+        """Validate a new ipaddr; reject an address another client already has.
+
+        FreeRADIUS refuses to start with two clients on the same address or network
+        ("Failed to add duplicate client"); overlapping networks are allowed.
+        Host names are compared only after FreeRADIUS resolves them, so not here.
+        """
+        address = parse_client_address(value)
+        if address.network is not None:
+            for other in iter_blocks(nodes, "client"):
+                if other.name == client_name:
+                    continue
+                for key in ("ipaddr", "ipv4addr", "ipv6addr"):
+                    assignment = get_assignment(other, key)
+                    if (
+                        assignment is not None
+                        and address_network(assignment.value) == address.network
+                    ):
+                        raise DuplicateClientAddressError(
+                            address.value, other.name or ""
+                        )
+        return (address.warning,) if address.warning else ()
 
     @staticmethod
     def _remove_client_blocks(nodes: AstNodes, name: str) -> int:
@@ -348,6 +379,12 @@ class RadiusService:
             if block is None:
                 raise ClientNotFoundError(name)
 
+            # A value already in the file may be hand-written; check only a change.
+            current = get_assignment(block, "ipaddr")
+            warnings: tuple[str, ...] = ()
+            if current is None or current.value != payload.ipaddr:
+                warnings = self._check_client_address(nodes, payload.ipaddr, name)
+
             try:
                 merge_client_block(block, payload)
             except ValueError as e:
@@ -372,6 +409,7 @@ class RadiusService:
                 reload_result=persisted.reload_result,
                 changed=persisted.changed,
                 backup=persisted.backup,
+                warnings=warnings,
             )
 
     async def get_client_edit_model(self, name: str) -> dict[str, Any]:

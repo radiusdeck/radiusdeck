@@ -2,6 +2,9 @@
     {% if backup %}
     {% include "components/backup_alert.html" %}
     {% endif %}
+    {% for warning in warnings|default([]) %}
+    <div class="alert alert-warning" role="alert">{{ warning }}</div>
+    {% endfor %}
     {% if reload_result.status.value == "failed" %}
     <div class="alert alert-warning d-flex justify-content-between align-items-center gap-3" role="alert">
         <span>FreeRADIUS reload failed: {{ reload_result.detail }}</span>

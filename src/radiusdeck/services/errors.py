@@ -17,6 +17,17 @@ class ClientAlreadyExistsError(RadiusDomainError):
         self.name = name
 
 
+class InvalidClientAddressError(RadiusDomainError):
+    """The client address would be rejected or misread by FreeRADIUS."""
+
+
+class DuplicateClientAddressError(RadiusDomainError):
+    def __init__(self, address: str, owner: str):
+        super().__init__(f"Address {address} is already used by client {owner}.")
+        self.address = address
+        self.owner = owner
+
+
 class InvalidClientUpsertError(RadiusDomainError):
     """Raised when an upsert would create an invalid client block."""
 
