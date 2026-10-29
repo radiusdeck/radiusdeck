@@ -4,6 +4,14 @@ Notable changes to RadiusDeck Community. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- **+ Add field** and **+ Add block** in the New Client and Edit forms, and
+  the buttons of a nested block, now add a row. In 0.1.0 and 0.1.1 they
+  inherited the form's `hx-select`, so nothing was inserted.
+
 ## [0.1.1] - 2026-10-27
 
 ### Security

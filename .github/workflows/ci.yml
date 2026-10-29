@@ -37,6 +37,8 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install -r requirements.txt -r requirements-dev.txt -e .
+      - name: Chromium for browser tests
+        run: python -m playwright install --with-deps chromium
       - name: Community tests
         env:
           APP_ENV: test
