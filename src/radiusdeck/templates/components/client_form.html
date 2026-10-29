@@ -2,7 +2,9 @@
 {% set mode = mode|default("create") %}
 {% set form_errors_id = "form-errors" %}
 
-<form {% if mode=="create" %} id="add-form" hx-post="/ui/clients/add-tree" hx-target="#clients-table"
+{# hx-disinherit: the form's hx-select/hx-target/hx-swap apply to its own submit only;
+   "+ Add field"/"+ Add block" and the buttons of inserted blocks must not inherit them. #}
+<form hx-disinherit="*" {% if mode=="create" %} id="add-form" hx-post="/ui/clients/add-tree" hx-target="#clients-table"
     hx-select="tbody[id^='client-block-']" hx-select-oob="#reload-alerts" hx-swap="beforeend" {% else %} id="edit-form" hx-put="/ui/clients/{{ client.name }}/tree"
     hx-target="#client-form-panel" hx-select="#form-card" hx-swap="innerHTML" {% endif %}>
     <div class="mb-3">
