@@ -14,6 +14,8 @@ Notable changes to RadiusDeck Community. The format follows
 - **Add Client** with the name of an existing client no longer replaces that
   client. The file is left unchanged and the form reports that the client
   already exists; use **Edit** to change it.
+- An error from **Add Client** is shown as text under the form instead of
+  `[object Object]`.
 
 ## [0.1.1] - 2026-10-27
 

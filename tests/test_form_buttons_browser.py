@@ -1,98 +1,17 @@
 """Browser test: "+ Add field" and "+ Add block" insert rows and the rows are saved.
 
-Runs the app with uvicorn and drives it with Playwright (Chromium). Skipped when
-Chromium is not installed: `python -m playwright install chromium`.
+Runs the app with uvicorn and drives it with Playwright (Chromium); the
+`live_server` and `page` fixtures are in conftest.py.
 """
 
 from __future__ import annotations
 
-import socket
-import threading
 import time
-from collections.abc import Generator
-from dataclasses import dataclass
 from pathlib import Path
-from unittest.mock import AsyncMock
 
-import pytest
-import uvicorn
-from playwright.sync_api import Page, expect, sync_playwright
+from playwright.sync_api import Page, expect
 
-from radiusdeck.main import app
-from radiusdeck.repositories.clients_conf_store import ClientsConfStore
-from radiusdeck.services.ports import ReloadPort
-from radiusdeck.services.radius_service import RadiusService
-from radiusdeck.services.reload_models import ReloadResult
-from radiusdeck.web.deps import get_radius_service
-
-
-def _chromium_installed() -> bool:
-    try:
-        with sync_playwright() as p:
-            return Path(p.chromium.executable_path).exists()
-    except Exception:
-        return False
-
-
-pytestmark = pytest.mark.skipif(
-    not _chromium_installed(),
-    reason="Chromium for Playwright is not installed",
-)
-
-
-@pytest.fixture()
-def page() -> Generator[Page, None, None]:
-    # Not pytest-playwright's session-scoped fixtures: they keep an event loop
-    # running in the main thread, which breaks the asyncio tests that run after.
-    with sync_playwright() as p:
-        browser = p.chromium.launch()
-        try:
-            yield browser.new_page()
-        finally:
-            browser.close()
-
-
-@dataclass(frozen=True)
-class LiveServer:
-    url: str
-    config_path: Path
-
-
-def _free_port() -> int:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        return int(s.getsockname()[1])
-
-
-@pytest.fixture()
-def live_server(tmp_path: Path) -> Generator[LiveServer, None, None]:
-    config_file = tmp_path / "clients.conf"
-    config_file.write_text(
-        "client LOCAL {\n    ipaddr = 127.0.0.1\n    secret = testing123\n}\n",
-        encoding="utf-8",
-    )
-    reloader = AsyncMock(spec=ReloadPort)
-    reloader.reload.return_value = ReloadResult.skipped()
-    service = RadiusService(ClientsConfStore(config_file), reloader=reloader)
-    app.dependency_overrides[get_radius_service] = lambda: service
-
-    port = _free_port()
-    server = uvicorn.Server(
-        uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning")
-    )
-    thread = threading.Thread(target=server.run, daemon=True)
-    thread.start()
-    deadline = time.monotonic() + 10
-    while not server.started:
-        if time.monotonic() > deadline:
-            raise RuntimeError("uvicorn did not start")
-        time.sleep(0.05)
-
-    yield LiveServer(url=f"http://127.0.0.1:{port}", config_path=config_file)
-
-    server.should_exit = True
-    thread.join(timeout=10)
-    app.dependency_overrides.pop(get_radius_service, None)
+from tests.conftest import LiveServer
 
 
 def _wait_for_file(path: Path, text: str) -> str:

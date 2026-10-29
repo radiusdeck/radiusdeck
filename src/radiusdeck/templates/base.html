@@ -247,10 +247,10 @@
             }
         });
 
-        // Ошибка при добавлении
+        // Ошибка при добавлении: htmx передаёт строку из HX-Trigger в evt.detail.value
         document.body.addEventListener("clientAddError", function (evt) {
             var el = document.getElementById("form-errors");
-            if (el) el.textContent = evt.detail;
+            if (el) el.textContent = evt.detail.value;
         });
 
         // После успешного add — очистить форму
@@ -266,12 +266,6 @@
 
             var errors = document.getElementById("form-errors");
             if (errors) errors.textContent = "";
-        });
-
-        // Ошибка при добавлении
-        document.body.addEventListener("clientAddError", function (evt) {
-            var el = document.getElementById("form-errors");
-            if (el) el.textContent = evt.detail;
         });
 
         document.body.addEventListener("clientUpdated", function (evt) {
