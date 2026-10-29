@@ -17,7 +17,9 @@ from radiusdeck.services.backup_models import BackupEntry
 from radiusdeck.services.errors import (
     ClientAlreadyExistsError,
     ClientNotFoundError,
+    DuplicateClientAddressError,
     DuplicateKeyError,
+    InvalidClientAddressError,
     InvalidNodeIdError,
     MergeClientError,
 )
@@ -71,11 +73,13 @@ def _render_reload_alert(
     request: Request,
     reload_result: ReloadResult,
     backup: BackupEntry | None = None,
+    warnings: tuple[str, ...] = (),
 ) -> str:
     return templates.get_template("components/reload_alert.html").render(
         request=request,
         reload_result=reload_result,
         backup=backup,
+        warnings=warnings,
         show_logs_link=settings.freeradius_log_viewer_enabled,
     )
 
@@ -86,9 +90,10 @@ def _render_with_reload_alert(
     context: dict[str, object],
     reload_result: ReloadResult,
     backup: BackupEntry | None,
+    warnings: tuple[str, ...] = (),
 ) -> str:
     html = templates.get_template(template_name).render(request=request, **context)
-    return html + _render_reload_alert(request, reload_result, backup)
+    return html + _render_reload_alert(request, reload_result, backup, warnings)
 
 
 def _render_table_fragment_with_reload_alert(
@@ -97,10 +102,11 @@ def _render_table_fragment_with_reload_alert(
     context: dict[str, object],
     reload_result: ReloadResult,
     backup: BackupEntry | None,
+    warnings: tuple[str, ...] = (),
 ) -> str:
     html = templates.get_template(template_name).render(request=request, **context)
     return f"<table>{html}</table>" + _render_reload_alert(
-        request, reload_result, backup
+        request, reload_result, backup, warnings
     )
 
 
@@ -198,6 +204,12 @@ async def add_client_tree(
                 )
             },
         )
+    except (InvalidClientAddressError, DuplicateClientAddressError) as e:
+        return Response(
+            content="",
+            media_type="text/html",
+            headers={"HX-Trigger": json.dumps({"clientAddError": str(e)})},
+        )
     except Exception as e:
         logger.error("Error adding client: %s", type(e).__name__)
         return Response(
@@ -220,6 +232,7 @@ async def add_client_tree(
             },
             result.reload_result,
             result.backup,
+            result.warnings,
         ),
     )
     resp.headers["HX-Trigger"] = json.dumps(
@@ -291,7 +304,14 @@ async def update_client_tree(
         from fastapi import HTTPException
 
         raise HTTPException(status_code=404, detail=str(e)) from e
-    except (InvalidNodeIdError, DuplicateKeyError, MergeClientError, ValueError) as e:
+    except (
+        InvalidNodeIdError,
+        DuplicateKeyError,
+        MergeClientError,
+        InvalidClientAddressError,
+        DuplicateClientAddressError,
+        ValueError,
+    ) as e:
         try:
             client_model = await service.get_client_edit_model(name)
         except ClientNotFoundError:
@@ -320,6 +340,7 @@ async def update_client_tree(
             },
             result.reload_result,
             result.backup,
+            result.warnings,
         ),
     )
     client_data = result.client

@@ -16,6 +16,17 @@ Notable changes to RadiusDeck Community. The format follows
   already exists; use **Edit** to change it.
 - An error from **Add Client** is shown as text under the form instead of
   `[object Object]`.
+- The client address is checked when a client is added or its address is
+  changed. Values that FreeRADIUS 3.2 rejects or reads differently from what
+  was typed are refused with the reason: `300.1.1.1`, `192.0.2.010` (read as
+  192.0.2.8), `192.0.2` (read as 192.0.0.2), `192.0.2.10/24` (read as the
+  whole network), an IPv6 zone. An address or network that another client
+  already uses is refused too: FreeRADIUS does not start with duplicate
+  clients. Host names and "any address" values (`*`, `0.0.0.0`, `::/0`) are
+  saved with a warning. An address already in the file is not checked when
+  it is left unchanged.
+- Errors from **Save Changes** in the Edit form are shown in the form. The
+  server returned them with status 400, which htmx did not display.
 
 ## [0.1.1] - 2026-10-27
 
