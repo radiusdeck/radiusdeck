@@ -116,7 +116,7 @@ FreeRADIUS writes to the log.
 ## Install with Docker
 
 The published Community image is
-`ghcr.io/radiusdeck/radiusdeck:0.1.1` (Linux amd64). The following commands
+`ghcr.io/radiusdeck/radiusdeck:0.1.2` (Linux amd64). The following commands
 start a local instance with an isolated test configuration on a Linux host.
 
 Create a directory for configuration and persistent backups, then download
@@ -125,7 +125,7 @@ the image:
 ```bash
 mkdir -p radiusdeck-data/backups
 touch radiusdeck-data/clients.conf
-docker pull ghcr.io/radiusdeck/radiusdeck:0.1.1
+docker pull ghcr.io/radiusdeck/radiusdeck:0.1.2
 ```
 
 From the same directory, start RadiusDeck:
@@ -142,7 +142,7 @@ docker run -d \
   -e APP_BACKUP_ENABLED=true \
   -e APP_AUTH_METHOD=none \
   -e APP_SIDECAR_RELOAD_ENABLED=false \
-  ghcr.io/radiusdeck/radiusdeck:0.1.1
+  ghcr.io/radiusdeck/radiusdeck:0.1.2
 ```
 
 Open **<http://127.0.0.1:8000/ui/clients>**. The example runs as your current
@@ -175,7 +175,7 @@ saved changes through your FreeRADIUS restart procedure, or configure the
 optional reload sidecar. The [host demo](demo/README.md) shows real
 authentication checks against an isolated FreeRADIUS process.
 
-The downloaded `0.1.1` image was checked with both the default user and a host
+The downloaded `0.1.2` image was checked with both the default user and a host
 UID/GID: startup, client creation and editing in the browser, exact backup
 restore, data persistence after restart, and Docker healthchecks passed.
 
