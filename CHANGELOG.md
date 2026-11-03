@@ -6,6 +6,16 @@ Notable changes to RadiusDeck Community. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- After adding, editing, or deleting a client, and after **Restore latest**,
+  the page says whether FreeRADIUS uses the change. Without the reload
+  sidecar it says the change is saved but not applied yet and to check the
+  configuration with `radiusd -XC` and restart FreeRADIUS. With the sidecar it
+  reports a completed or failed reload. Earlier, without the sidecar, only
+  "Recovery backup created" or "Configuration restored successfully" was
+  shown. A save that changes nothing shows no such message.
+
 ### Fixed
 
 - **+ Add field** and **+ Add block** in the New Client and Edit forms, and

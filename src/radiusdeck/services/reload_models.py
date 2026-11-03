@@ -42,3 +42,25 @@ class ReloadResult:
     @classmethod
     def skipped(cls, detail: str = "reload disabled") -> ReloadResult:
         return cls(status=ReloadStatus.SKIPPED, detail=detail)
+
+
+class ApplyState(Enum):
+    """Whether the running FreeRADIUS uses a saved configuration change."""
+
+    RELOADED = "reloaded"  # saved and the reload integration succeeded
+    RELOAD_FAILED = "reload_failed"  # saved, but the reload attempt failed
+    RESTART_REQUIRED = "restart_required"  # saved, no automatic reload configured
+
+
+def apply_state(reload_result: ReloadResult, *, changed: bool) -> ApplyState | None:
+    """Classify a mutation outcome for user feedback.
+
+    Returns ``None`` when nothing was written, so there is nothing to apply.
+    """
+    if not changed:
+        return None
+    if reload_result.status is ReloadStatus.SUCCESS:
+        return ApplyState.RELOADED
+    if reload_result.status is ReloadStatus.FAILED:
+        return ApplyState.RELOAD_FAILED
+    return ApplyState.RESTART_REQUIRED

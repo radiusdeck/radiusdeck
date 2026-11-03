@@ -10,7 +10,7 @@ from radiusdeck.auth.models import CurrentUser
 from radiusdeck.extensions.ui import ui_slots
 from radiusdeck.services.backup_models import RollbackValidationError
 from radiusdeck.services.backup_service import BackupService
-from radiusdeck.services.reload_models import ReloadStatus
+from radiusdeck.services.reload_models import apply_state
 from radiusdeck.web.deps import get_backup_service, templates
 
 router = APIRouter()
@@ -64,7 +64,7 @@ async def rollback_latest_backup(
     context.update(
         {
             "rollback_result": result,
-            "reload_failed": result.reload_result.status is ReloadStatus.FAILED,
+            "apply_state": apply_state(result.reload_result, changed=True),
         }
     )
     return templates.TemplateResponse(request, "components/backup_table.html", context)
