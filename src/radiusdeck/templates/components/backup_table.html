@@ -2,11 +2,14 @@
 <div class="alert alert-success" role="status">{{ message }}</div>
 {% endif %}
 {% if rollback_result %}
-<div class="alert alert-{{ 'warning' if reload_failed else 'success' }}" role="status">
-    {% if reload_failed %}
-    Configuration restored, but FreeRADIUS reload failed.
+<div class="alert alert-{{ 'success' if apply_state.value == 'reloaded' else 'warning' }}" role="status" data-apply-state="{{ apply_state.value }}">
+    {% if apply_state.value == "reload_failed" %}
+    Configuration restored, but FreeRADIUS reload failed: {{ rollback_result.reload_result.detail }}.
+    {% elif apply_state.value == "restart_required" %}
+    Configuration restored.
+    {% include "components/restart_required_notice.html" %}
     {% else %}
-    Configuration restored successfully.
+    Configuration restored and FreeRADIUS reloaded.
     {% endif %}
     Safety backup:
     <code>{{ rollback_result.safety_backup.backup_id }}</code>.

@@ -25,7 +25,7 @@ from radiusdeck.services.errors import (
     MergeClientError,
 )
 from radiusdeck.services.radius_service import DeleteResult, RadiusService, UpsertResult
-from radiusdeck.services.reload_models import ReloadResult
+from radiusdeck.services.reload_models import ReloadResult, apply_state
 from radiusdeck.web.deps import get_radius_service, templates
 
 RadiusServiceDep = Annotated[RadiusService, Depends(get_radius_service)]
@@ -73,12 +73,15 @@ def _client_row_context(request: Request, client: dict[str, str]) -> dict[str, s
 def _render_reload_alert(
     request: Request,
     reload_result: ReloadResult,
-    backup: BackupEntry | None = None,
+    backup: BackupEntry | None,
+    *,
+    changed: bool,
     warnings: tuple[str, ...] = (),
 ) -> str:
     return templates.get_template("components/reload_alert.html").render(
         request=request,
         reload_result=reload_result,
+        apply_state=apply_state(reload_result, changed=changed),
         backup=backup,
         warnings=warnings,
         show_logs_link=settings.freeradius_log_viewer_enabled,
@@ -91,10 +94,14 @@ def _render_with_reload_alert(
     context: dict[str, object],
     reload_result: ReloadResult,
     backup: BackupEntry | None,
+    *,
+    changed: bool,
     warnings: tuple[str, ...] = (),
 ) -> str:
     html = templates.get_template(template_name).render(request=request, **context)
-    return html + _render_reload_alert(request, reload_result, backup, warnings)
+    return html + _render_reload_alert(
+        request, reload_result, backup, changed=changed, warnings=warnings
+    )
 
 
 def _render_table_fragment_with_reload_alert(
@@ -103,11 +110,13 @@ def _render_table_fragment_with_reload_alert(
     context: dict[str, object],
     reload_result: ReloadResult,
     backup: BackupEntry | None,
+    *,
+    changed: bool,
     warnings: tuple[str, ...] = (),
 ) -> str:
     html = templates.get_template(template_name).render(request=request, **context)
     return f"<table>{html}</table>" + _render_reload_alert(
-        request, reload_result, backup, warnings
+        request, reload_result, backup, changed=changed, warnings=warnings
     )
 
 
@@ -233,7 +242,8 @@ async def add_client_tree(
             },
             result.reload_result,
             result.backup,
-            result.warnings,
+            changed=result.changed,
+            warnings=result.warnings,
         ),
     )
     resp.headers["HX-Trigger"] = json.dumps(
@@ -341,7 +351,8 @@ async def update_client_tree(
             },
             result.reload_result,
             result.backup,
-            result.warnings,
+            changed=result.changed,
+            warnings=result.warnings,
         ),
     )
     client_data = result.client
@@ -422,7 +433,9 @@ async def delete_client(
         name, actor_username=admin.username
     )
     resp = HTMLResponse(
-        content=_render_reload_alert(request, result.reload_result, result.backup),
+        content=_render_reload_alert(
+            request, result.reload_result, result.backup, changed=result.changed
+        ),
         status_code=200,
     )
     resp.headers["HX-Trigger"] = json.dumps(
