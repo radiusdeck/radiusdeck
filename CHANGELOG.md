@@ -4,7 +4,7 @@ Notable changes to RadiusDeck Community. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.2] - 2026-11-03
 
 ### Added
 
@@ -15,6 +15,10 @@ Notable changes to RadiusDeck Community. The format follows
   reports a completed or failed reload. Earlier, without the sidecar, only
   "Recovery backup created" or "Configuration restored successfully" was
   shown. A save that changes nothing shows no such message.
+
+### Changed
+
+- FastAPI is updated from 0.161.1 to 0.162.0.
 
 ### Fixed
 
@@ -42,6 +46,13 @@ Notable changes to RadiusDeck Community. The format follows
   them instead of failing with an error 500. Saving changes that key in
   place, and an `ipv6addr` client accepts only an IPv6 address (`ipv4addr`
   only IPv4). These keys cannot be added as extra parameters.
+
+### Documentation
+
+- The commented FreeRADIUS service in `docker-compose.yml` uses the 3.2.10
+  image and mounts `clients.conf` at `/etc/freeradius/clients.conf`, the path
+  the official image reads, instead of the Debian package path. It notes the
+  file permissions the setup needs.
 
 ## [0.1.1] - 2026-10-27
 
@@ -74,5 +85,6 @@ Notable changes to RadiusDeck Community. The format follows
 
 First public release of RadiusDeck Community.
 
+[0.1.2]: https://github.com/radiusdeck/radiusdeck/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/radiusdeck/radiusdeck/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/radiusdeck/radiusdeck/releases/tag/v0.1.0
